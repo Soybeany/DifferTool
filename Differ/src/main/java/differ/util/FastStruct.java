@@ -13,10 +13,9 @@ public class FastStruct {
 
     public final Map<String, List<Unit>> unitsMap;
     public final List<Map<String, List<Unit>>> exUnitsMap;
-    public final List<Unit> contentUnitList = new LinkedList<>();
 
     public FastStruct(String input, boolean needEx) {
-        unitsMap = toUnitsMap(contentUnitList, input);
+        unitsMap = toUnitsMap(input);
         exUnitsMap = needEx ? toExUnitsMap(unitsMap) : null;
     }
 
@@ -42,13 +41,6 @@ public class FastStruct {
     }
 
     /**
-     * 获得与指定单元有指定偏移的单元
-     */
-    public Unit getUnitWithOffset(Unit base, int offset) {
-        return null != base ? contentUnitList.get(base.contentUnitIndex + offset) : null;
-    }
-
-    /**
      * 获得额外 单元映射链 集
      */
     private static List<Map<String, List<Unit>>> toExUnitsMap(Map<String, List<Unit>> map) {
@@ -68,16 +60,18 @@ public class FastStruct {
      *
      * @return 拆分后的单元  key为null时表示首单元
      */
-    private static Map<String, List<Unit>> toUnitsMap(List<Unit> contentUnitList, String input) {
+    private static Map<String, List<Unit>> toUnitsMap(String input) {
         Map<String, List<Unit>> result = new HashMap<>();
         Unit curUnit, lastUnit = null;
         TextSeparator separator = new TextSeparator(input);
         int contentUnitIndex = 0;
+        LinkedList<Unit> contentUnits = new LinkedList<>();
         while (null != (curUnit = separator.getNextUnit())) {
             // 放入内容单元列表
             if (!curUnit.isLowPriorityUnit()) {
                 curUnit.contentUnitIndex = contentUnitIndex++;
-                contentUnitList.add(curUnit);
+                curUnit.contentUnits = contentUnits;
+                contentUnits.add(curUnit);
             }
             // 放入普通列表
             getNonNullList(result, null, curUnit).add(curUnit);

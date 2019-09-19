@@ -26,7 +26,7 @@ public class StructImpl {
 
         LinkedList<WordMatchResult> results = new LinkedList<>();
         while (null != targetUnit) {
-            WordMatchResult result = getMatchResult(source, target, 0, targetUnit);
+            WordMatchResult result = getMatchResult(source, 0, targetUnit);
 //            posOffset = result.getSourceStartPos() - sourcePos;
 //            if (posOffset != 0) {
 //                WordMatchResult delete = new WordMatchResult();
@@ -51,7 +51,7 @@ public class StructImpl {
      * @param unit      待匹配的单元 (待匹配文本)
      * @return 匹配出的结果
      */
-    private static WordMatchResult getMatchResult(FastStruct source, FastStruct target, int fromIndex, Unit unit) {
+    private static WordMatchResult getMatchResult(FastStruct source, int fromIndex, Unit unit) {
         // 普通匹配
         String key = FastStruct.getNewKey(null, unit);
         List<Unit> units = source.unitsMap.get(key);
@@ -79,13 +79,13 @@ public class StructImpl {
             tmpUnits = source.exUnitsMap.get(tmpMatchCount++).get(key);
         }
         // 有后续单元
-        return getMatchResultInChain(source, target, units, fromIndex, matchCount, unit);
+        return getMatchResultInChain(units, fromIndex, matchCount, unit);
     }
 
     /**
      * 从单元链中获取结果
      */
-    private static WordMatchResult getMatchResultInChain(FastStruct source, FastStruct target, List<Unit> sourceUnits, int fromIndex, int matchCount, Unit unit) {
+    private static WordMatchResult getMatchResultInChain(List<Unit> sourceUnits, int fromIndex, int matchCount, Unit unit) {
         if (null == sourceUnits) {
             throw new RuntimeException("数据源不能为null");
         }
@@ -117,8 +117,8 @@ public class StructImpl {
         }
         // 记录起始单元
         result.matchCount = matchCount + maxExMatchCount;
-        sourceTU.from = source.getUnitWithOffset(sourceTU.to, -result.matchCount);
-        targetTU.from = target.getUnitWithOffset(targetTU.to, -result.matchCount);
+        sourceTU.from = sourceTU.to.getContentUnitWithOffset(-result.matchCount);
+        targetTU.from = targetTU.to.getContentUnitWithOffset(-result.matchCount);
         return result;
     }
 

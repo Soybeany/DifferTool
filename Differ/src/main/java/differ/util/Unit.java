@@ -1,5 +1,7 @@
 package differ.util;
 
+import java.util.List;
+
 /**
  * 由一段文本拆分而成的单元，主要分为ContentUnit与LowPriorityUnit
  * <br>Created by Soybeany on 2019/9/11.
@@ -17,11 +19,6 @@ public class Unit {
      * 以单元计算的下标
      */
     public int unitIndex;
-
-    /**
-     * 以内容单元计算的下标
-     */
-    public int contentUnitIndex;
 
     // ****************************************内容标识****************************************
 
@@ -47,6 +44,17 @@ public class Unit {
      */
     public Unit nextUnit;
 
+    // ****************************************内容单元特有****************************************
+
+    /**
+     * 以内容单元计算的下标(只有内容单元有值，否则为null)
+     */
+    public Integer contentUnitIndex;
+
+    /**
+     * 内容单元的列表(只有内容单元有值，否则为null)
+     */
+    public List<Unit> contentUnits;
 
     public Unit(int charIndex, int unitIndex, int priority) {
         this.charIndex = charIndex;
@@ -83,5 +91,15 @@ public class Unit {
      */
     public boolean isLowPriorityUnit() {
         return !PriorityUtils.isHighPriority(priority);
+    }
+
+    /**
+     * 获得与指定单元有指定偏移的单元
+     */
+    public Unit getContentUnitWithOffset(int offset) {
+        if (isLowPriorityUnit()) {
+            throw new RuntimeException("只有内容单元能调用此方法");
+        }
+        return contentUnits.get(contentUnitIndex + offset);
     }
 }
