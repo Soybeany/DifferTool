@@ -1,4 +1,6 @@
-package differ.util;
+package differ.fast.pretreat;
+
+import differ.fast.model.Unit;
 
 import java.util.*;
 
@@ -8,15 +10,15 @@ import java.util.*;
  */
 public class FastStruct {
 
-    private static final int MAX_COUNT = 20; // value列表允许的最大数量
+    private static final int MAX_COUNT = 2; // value列表允许的最大数量
     private static final String SEPARATOR = "-"; // 组合key中使用的分隔符
 
     public final Map<String, List<Unit>> unitsMap;
-    public final List<Map<String, List<Unit>>> exUnitsMap;
+    public final List<Map<String, List<Unit>>> exContentUnitsMap;
 
     public FastStruct(String input, boolean needEx) {
         unitsMap = toUnitsMap(input);
-        exUnitsMap = needEx ? toExUnitsMap(unitsMap) : null;
+        exContentUnitsMap = needEx ? toExContentUnitsMap(unitsMap) : null;
     }
 
     /**
@@ -30,7 +32,7 @@ public class FastStruct {
      * 判断指定的单元列表在ExUnitsMap中是否有键
      */
     public static boolean hasKeyInExUnitsMap(List<Unit> units) {
-        return units.size() >= MAX_COUNT;
+        return null != units && units.size() >= MAX_COUNT;
     }
 
     /**
@@ -41,12 +43,19 @@ public class FastStruct {
     }
 
     /**
+     * 获得最后一个单元
+     */
+    public Unit getLastUnit() {
+        return getFirstUnit().getContentUnitWithOffset(Integer.MAX_VALUE, false);
+    }
+
+    /**
      * 获得额外 单元映射链 集
      */
-    private static List<Map<String, List<Unit>>> toExUnitsMap(Map<String, List<Unit>> map) {
+    private static List<Map<String, List<Unit>>> toExContentUnitsMap(Map<String, List<Unit>> map) {
         List<Map<String, List<Unit>>> results = new LinkedList<>();
         while (true) {
-            map = getLongKeyMap(map);
+            map = getLongKeyContentMap(map);
             if (map.isEmpty()) {
                 break;
             }
@@ -64,15 +73,7 @@ public class FastStruct {
         Map<String, List<Unit>> result = new HashMap<>();
         Unit curUnit, lastUnit = null;
         TextSeparator separator = new TextSeparator(input);
-        int contentUnitIndex = 0;
-        LinkedList<Unit> contentUnits = new LinkedList<>();
         while (null != (curUnit = separator.getNextUnit())) {
-            // 放入内容单元列表
-            if (!curUnit.isLowPriorityUnit()) {
-                curUnit.contentUnitIndex = contentUnitIndex++;
-                curUnit.contentUnits = contentUnits;
-                contentUnits.add(curUnit);
-            }
             // 放入普通列表
             getNonNullList(result, null, curUnit).add(curUnit);
             // 建立链
@@ -88,9 +89,9 @@ public class FastStruct {
     }
 
     /**
-     * 获得长Key的映射
+     * 获得长Key的内容映射
      */
-    private static Map<String, List<Unit>> getLongKeyMap(Map<String, List<Unit>> input) {
+    private static Map<String, List<Unit>> getLongKeyContentMap(Map<String, List<Unit>> input) {
         Map<String, List<Unit>> result = new HashMap<>();
         for (Map.Entry<String, List<Unit>> entry : input.entrySet()) {
             String oldKey = entry.getKey();

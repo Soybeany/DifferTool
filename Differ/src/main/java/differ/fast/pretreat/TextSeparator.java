@@ -1,4 +1,8 @@
-package differ.util;
+package differ.fast.pretreat;
+
+import differ.fast.model.Unit;
+
+import java.util.LinkedList;
 
 /**
  * 文本分隔者
@@ -11,6 +15,11 @@ public class TextSeparator {
 
     private int charIndex;
     private int unitIndex;
+
+    private int contentIndex;
+    private LinkedList<Unit> contentUnits = new LinkedList<>();
+
+    private int partIndex;
 
     public TextSeparator(String text) {
         this.text = text;
@@ -29,9 +38,19 @@ public class TextSeparator {
         }
         // 创建新单元
         char curC = text.charAt(charIndex);
-        Unit unit = new Unit(charIndex, unitIndex++, PriorityUtils.getPriority(curC));
-        int classify = unit.priority & PriorityUtils.SEPARATE_SWITCHER;
-        switch (classify) {
+        int priority = PriorityUtils.getPriority(curC);
+        Unit unit = new Unit(charIndex, unitIndex++, partIndex, priority);
+        int separateType = unit.priority & PriorityUtils.SEPARATE_SWITCHER;
+        // 补充单元信息
+        if (!unit.isLowPriorityUnit()) {
+            unit.contentUnitIndex = contentIndex++;
+            unit.contentUnits = contentUnits;
+            contentUnits.add(unit);
+        } else if (PriorityUtils.PRIORITY_NEWLINE == priority) {
+            partIndex++;
+        }
+        // 单元分类
+        switch (separateType) {
             case PriorityUtils.SEPARATE_SINGLE:
                 unit.text = curC + "";
                 charIndex++;

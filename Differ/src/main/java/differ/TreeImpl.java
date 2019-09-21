@@ -1,6 +1,6 @@
 package differ;
 
-import differ.util.FastStruct;
+import differ.fast.pretreat.FastStruct;
 import org.junit.Test;
 import tree.SimpleTree;
 import tree.node.TreeNode;

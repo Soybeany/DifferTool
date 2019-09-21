@@ -1,4 +1,4 @@
-package differ.util;
+package differ.fast.pretreat;
 
 /**
  * 优先级工具类
@@ -12,12 +12,13 @@ public class PriorityUtils {
     private static final int SEPARATE_TYPE_SHIFT = 2;
     public static final int SEPARATE_SWITCHER = (1 << SEPARATE_TYPE_SHIFT) - 1;
 
-    public static final int PRIORITY_CN_CHAR = (5 << SEPARATE_TYPE_SHIFT) + SEPARATE_SINGLE;
-    public static final int PRIORITY_EN_LETTER = (4 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final int PRIORITY_NUM = (3 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final int PRIORITY_OTHER = (2 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final int PRIORITY_EN_SYMBOL = (1 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final int PRIORITY_SEPARATOR = SEPARATE_GROUP;
+    public static final int PRIORITY_CN_CHAR = (6 << SEPARATE_TYPE_SHIFT) + SEPARATE_SINGLE;
+    public static final int PRIORITY_EN_LETTER = (5 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_NUM = (4 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_OTHER = (3 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_EN_SYMBOL = (2 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_SPACE = (1 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_NEWLINE = SEPARATE_GROUP;
 
     /**
      * 获得字符的优先级
@@ -25,8 +26,10 @@ public class PriorityUtils {
     public static int getPriority(char c) {
         if (isEnLetter(c)) {
             return PRIORITY_EN_LETTER;
-        } else if (isSeparator(c)) {
-            return PRIORITY_SEPARATOR;
+        } else if (isSpace(c)) {
+            return PRIORITY_SPACE;
+        } else if (isNewline(c)) {
+            return PRIORITY_NEWLINE;
         } else if (isEnSymbol(c)) {
             return PRIORITY_EN_SYMBOL;
         } else if (isNum(c)) {
@@ -76,10 +79,17 @@ public class PriorityUtils {
     }
 
     /**
-     * 是否分隔符
+     * 是否空格
      */
-    private static boolean isSeparator(char c) {
-        return ' ' == c || 10 == c || 13 == c;
+    private static boolean isSpace(char c) {
+        return ' ' == c;
+    }
+
+    /**
+     * 是否换行符
+     */
+    private static boolean isNewline(char c) {
+        return 10 == c || 13 == c;
     }
 
     /**
