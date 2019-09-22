@@ -51,6 +51,11 @@ public class Unit {
      */
     public Unit nextUnit;
 
+    /**
+     * 此单元是否已超出
+     */
+    public boolean isExceeded;
+
     // ****************************************内容单元特有****************************************
 
     /**
@@ -115,6 +120,13 @@ public class Unit {
         if (index < contentUnits.size()) {
             return contentUnits.get(index);
         }
-        return allowExceed ? null : contentUnits.getLast();
+        // 允许超出
+        if (allowExceed) {
+            return null;
+        }
+        // 不允许超出，使用字段替代
+        Unit unit = contentUnits.getLast();
+        unit.isExceeded = true;
+        return unit;
     }
 }

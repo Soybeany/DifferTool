@@ -10,12 +10,15 @@ import java.util.*;
  */
 public class FastStruct {
 
-    private static final int MAX_COUNT = 2; // value列表允许的最大数量
+    private static final int MAX_COUNT = 20; // value列表允许的最大数量
     private static final String SEPARATOR = "-"; // 组合key中使用的分隔符
 
     public final Map<String, List<Unit>> unitsMap;
     public final List<Map<String, List<Unit>>> exContentUnitsMap;
 
+    /**
+     * @param needEx 是否生成额外的单元映射
+     */
     public FastStruct(String input, boolean needEx) {
         unitsMap = toUnitsMap(input);
         exContentUnitsMap = needEx ? toExContentUnitsMap(unitsMap) : null;
@@ -40,13 +43,6 @@ public class FastStruct {
      */
     public Unit getFirstUnit() {
         return unitsMap.get(null).get(0);
-    }
-
-    /**
-     * 获得最后一个单元
-     */
-    public Unit getLastUnit() {
-        return getFirstUnit().getContentUnitWithOffset(Integer.MAX_VALUE, false);
     }
 
     /**

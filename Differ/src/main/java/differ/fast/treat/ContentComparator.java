@@ -15,15 +15,21 @@ public class ContentComparator {
 
     private static final int PART_SWIFT_ALLOW_COUNT = 1; // 对比过程中，允许的行偏移数
 
+    public static CompareResult getMatchResult(FastStruct source, Unit curSourceUnit, Unit contentUnit) {
+        return getMatchResult(source, curSourceUnit, null, null, contentUnit);
+    }
+
     /**
      * 尝试获得匹配的结果
      *
      * @param source        快速结构 (被匹配文本)
      * @param curSourceUnit 已匹配到的源单元 (被匹配文本)
+     * @param minUnit       命中的单元至少要在此单元之后(被匹配文本)[可选]
+     * @param maxUnit       命中的单元至多只能在此单元之前(被匹配文本)[可选]
      * @param contentUnit   待匹配的单元 (待匹配文本)
      * @return 匹配出的结果
      */
-    public static CompareResult getMatchResult(FastStruct source, Unit curSourceUnit, Unit contentUnit) {
+    public static CompareResult getMatchResult(FastStruct source, Unit curSourceUnit, Unit minUnit, Unit maxUnit, Unit contentUnit) {
         // 普通匹配
         String key = FastStruct.getNewKey(null, contentUnit);
         List<Unit> units = source.unitsMap.get(key);
@@ -54,13 +60,13 @@ public class ContentComparator {
             }
         }
         // 有后续单元
-        return getMatchResultInChain(units, curSourceUnit, matchCount, contentUnit);
+        return getMatchResultInChain(units, curSourceUnit, minUnit, maxUnit, matchCount, contentUnit);
     }
 
     /**
      * 从单元链中获取结果
      */
-    private static CompareResult getMatchResultInChain(List<Unit> sourceUnits, Unit curSourceUnit, int matchCount, Unit unit) {
+    private static CompareResult getMatchResultInChain(List<Unit> sourceUnits, Unit curSourceUnit, Unit minUnit, Unit maxUnit, int matchCount, Unit unit) {
         if (null == sourceUnits) {
             throw new RuntimeException("数据源不能为null");
         }
@@ -69,9 +75,14 @@ public class ContentComparator {
         TerminalUnit targetTU = result.target;
         int exMatchCount, maxExMatchCount = 0; // 额外的匹配数
         for (Unit sourceUnit : sourceUnits) {
+            // 范围限制
             if (sourceUnit.partIndex < curSourceUnit.partIndex - PART_SWIFT_ALLOW_COUNT) {
                 continue;
             } else if (sourceUnit.partIndex > curSourceUnit.partIndex + PART_SWIFT_ALLOW_COUNT) {
+                break;
+            } else if (null != minUnit && sourceUnit.contentUnitIndex < minUnit.contentUnitIndex + matchCount) {
+                continue;
+            } else if (null != maxUnit && sourceUnit.contentUnitIndex > maxUnit.contentUnitIndex) {
                 break;
             }
             // 归零

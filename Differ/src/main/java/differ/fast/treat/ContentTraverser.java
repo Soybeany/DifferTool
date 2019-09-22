@@ -23,115 +23,110 @@ public class ContentTraverser {
         SentryUnit sentryUnit = new SentryUnit(sStruct.getFirstUnit(), tStruct.getFirstUnit());
         // 结果列表
         LinkedList<CompareResult> results = new LinkedList<>();
+        // 预处理
         onPreHandle(sentryUnit, results);
+        // 正式处理
         while (null != sentryUnit.target) {
-            CompareResult result = ContentComparator.getMatchResult(sStruct, sentryUnit.source, sentryUnit.target);
-//            // 跳过已处理的目标单元
-            if (result.matchUnitCount > 1) {
-                sentryUnit.target = sentryUnit.target.getContentUnitWithOffset(result.matchUnitCount - 1, true);
-            }
-            Integer contentUnitOffset = result.getSourceContentUnitOffset(sentryUnit.source);
-            // 内容非新增
-            if (null != contentUnitOffset) {
-                // 内容删除
-                if (contentUnitOffset > 1) {
-                    onHandleDelete(sentryUnit, results, contentUnitOffset);
-                }
-                // 内容相同，比较匹配结束后的下一单元
-                else if (contentUnitOffset == 0) {
-                    onHandleTheSame(sentryUnit, result);
-                }
-                // 上一次遍历的内容过于超前
-                else if (contentUnitOffset < 0) {
-                    onHandleSurpass(sentryUnit, results, result);
-                }
-            }
-            // 保存匹配的结果
-            results.add(result);
-            // 下一内容单元
-            sentryUnit.target = sentryUnit.target.nextContentUnit();
+            onHandle(sStruct, sentryUnit, results);
         }
-        Unit sourceLastUnit = sentryUnit.source.nextContentUnit();
-        if (null != sourceLastUnit) {
-            CompareResult delete = new CompareResult();
-            delete.source.from = sourceLastUnit;
-            delete.source.to = sStruct.getLastUnit();
-            results.add(delete);
-        }
+        // 后处理
+        onPostHandle(sentryUnit, results);
+        // 返回结果
         return results;
     }
 
     private static void onPreHandle(SentryUnit sentryUnit, LinkedList<CompareResult> results) {
-        // 如果以低优先级单元开头，则需要额外处理
-        if (sentryUnit.source.isLowPriorityUnit() || sentryUnit.target.isLowPriorityUnit()) {
-            CompareResult result = new CompareResult();
-            result.matchUnitCount = sentryUnit.source.equals(sentryUnit.target) ? 1 : 0;
-            if (sentryUnit.source.isLowPriorityUnit()) {
-                result.source.singleUnit(sentryUnit.source);
-                sentryUnit.source = sentryUnit.source.nextContentUnit();
+        // 如果不是以低优先级单元开头，则不需要额外处理
+        if (!sentryUnit.source.isLowPriorityUnit() && !sentryUnit.target.isLowPriorityUnit()) {
+            return;
+        }
+        CompareResult result = new CompareResult();
+        result.matchUnitCount = sentryUnit.source.equals(sentryUnit.target) ? 1 : 0;
+        // source
+        if (sentryUnit.source.isLowPriorityUnit()) {
+            result.source.singleUnit(sentryUnit.source);
+            sentryUnit.source = sentryUnit.source.nextContentUnit();
+        }
+        // target
+        if (sentryUnit.target.isLowPriorityUnit()) {
+            result.target.singleUnit(sentryUnit.target);
+            sentryUnit.target = sentryUnit.target.nextContentUnit();
+        }
+        results.add(result);
+    }
+
+    private static void onHandle(FastStruct sStruct, SentryUnit sentryUnit, LinkedList<CompareResult> results) {
+        CompareResult result = ContentComparator.getMatchResult(sStruct, sentryUnit.source, sentryUnit.target);
+        handleResult(sStruct, sentryUnit, results, result);
+    }
+
+    private static void handleResult(FastStruct sStruct, SentryUnit sentryUnit, LinkedList<CompareResult> results, CompareResult result) {
+        Integer contentUnitOffset = result.getSourceContentUnitOffset(sentryUnit.source);
+        // 内容新增
+        if (null == contentUnitOffset) {
+            onHandleAdd(results, result);
+        }
+        // 内容非新增
+        else {
+            // 内容相同，比较匹配结束后的下一单元
+            if (contentUnitOffset == 0) {
+                onHandleTheSame(sentryUnit, results, result);
             }
-            if (sentryUnit.target.isLowPriorityUnit()) {
-                result.target.singleUnit(sentryUnit.target);
-                sentryUnit.target = sentryUnit.target.nextContentUnit();
+            // 上一次遍历的内容过于超前
+            else if (contentUnitOffset < 0) {
+                onHandleSurpass(sStruct, sentryUnit, results, result);
+                return;
             }
+            // 内容删除
+            else {
+                onHandleDelete(sentryUnit, results, result, contentUnitOffset);
+            }
+            // 设置下一源内容单元
+            sentryUnit.source = result.source.to.getContentUnitWithOffset(1, false);
+        }
+        // 设置下一目标内容单元
+        sentryUnit.target = result.target.to.getContentUnitWithOffset(1, true);
+    }
+
+    private static void onHandleAdd(LinkedList<CompareResult> results, CompareResult result) {
+        // 若为连续新增，则合并为同一个结果
+        if (!results.isEmpty() && results.getLast().isTypeAdd()) {
+            results.getLast().target.to = result.target.to;
+        } else {
             results.add(result);
         }
     }
 
-    private static void onHandleDelete(SentryUnit sentryUnit, LinkedList<CompareResult> results, int contentUnitOffset) {
+    private static void onHandleDelete(SentryUnit sentryUnit, LinkedList<CompareResult> results, CompareResult result, int contentUnitOffset) {
         CompareResult delete = new CompareResult();
         delete.source.from = sentryUnit.source;
-        delete.source.to = sentryUnit.source.getContentUnitWithOffset(contentUnitOffset - 1, true);
+        delete.source.to = sentryUnit.source.getContentUnitWithOffset(contentUnitOffset - 1, false);
         sentryUnit.source = delete.source.to.getContentUnitWithOffset(2, false);
         results.add(delete);
-    }
-
-    private static void onHandleTheSame(SentryUnit sentryUnit, CompareResult result) {
-        sentryUnit.source = result.source.to.getContentUnitWithOffset(1, false);
-    }
-
-    private static void onHandleSurpass(SentryUnit sentryUnit, LinkedList<CompareResult> results, CompareResult result) {
-        int totalMatchUnitCount = 0, firstHandleIndex = 0;
-        boolean needHandle = true;
-        for (int i = results.size() - 1; i >= 0; i--) {
-            CompareResult tobeCheck = results.get(i);
-            Integer offset = result.getSourceContentUnitOffset(tobeCheck);
-            if (null != offset) {
-                // 找到匹配的位置
-                if (offset > 0) {
-                    break;
-                }
-                // 匹配的单元数 不及 之前累计的单元数
-                totalMatchUnitCount += tobeCheck.matchUnitCount;
-                if (result.matchUnitCount <= totalMatchUnitCount) {
-                    needHandle = false;
-                    break;
-                }
-            }
-            firstHandleIndex = i;
+        if (null != result) {
+            results.add(result);
         }
-        if (needHandle) {
-            CompareResult tmpResult = null;
-            for (int i = results.size() - 1; i >= firstHandleIndex; i--) {
-                CompareResult tobeCheck = results.get(i);
-                if (tobeCheck.isTypeMatch()) {
-                    tmpResult = tobeCheck;
-                    results.remove(i);
-                } else if (tobeCheck.isTypeDelete() && null != tmpResult) {
-                    tobeCheck.target = tmpResult.target;
-                    if (tobeCheck.source.from == result.source.from) {
-                        tobeCheck.source.singleUnit(null);
-                    } else {
-                        tobeCheck.source.to = result.source.from;
-                    }
-                }
-            }
-            sentryUnit.source = result.source.to.getContentUnitWithOffset(1, false);
+    }
+
+    private static void onHandleTheSame(SentryUnit sentryUnit, LinkedList<CompareResult> results, CompareResult result) {
+        results.add(result);
+    }
+
+    private static void onHandleSurpass(FastStruct sStruct, SentryUnit sentryUnit, LinkedList<CompareResult> results, CompareResult result) {
+        // 尝试新范围中找结果
+        CompareResult anotherResult = ContentComparator.getMatchResult(sStruct, sentryUnit.source, sentryUnit.source, null, sentryUnit.target);
+        handleResult(sStruct, sentryUnit, results, anotherResult);
+    }
+
+    private static void onPostHandle(SentryUnit sentryUnit, LinkedList<CompareResult> results) {
+        if (!sentryUnit.source.isExceeded) {
+            // 补充被删除的单元
+            onHandleDelete(sentryUnit, results, null, Integer.MAX_VALUE >> 1);
         }
     }
 
     /**
-     * 哨兵单元
+     * 哨兵单元(待处理的开始单元)
      */
     private static class SentryUnit {
         Unit source;
