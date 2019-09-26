@@ -30,13 +30,6 @@ public class TerminalUnit {
     }
 
     /**
-     * 调整结束单元
-     */
-    public void adjustEndUnit(int offset) {
-        to = to.getContentUnitWithOffset(offset, true);
-    }
-
-    /**
      * 是否已被定义，即赋值
      */
     public boolean isDefined() {

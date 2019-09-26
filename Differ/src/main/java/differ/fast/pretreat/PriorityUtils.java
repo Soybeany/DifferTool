@@ -20,6 +20,11 @@ public class PriorityUtils {
     public static final int PRIORITY_SPACE = (1 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
     public static final int PRIORITY_NEWLINE = SEPARATE_GROUP;
 
+    static {
+        System.out.println("cn_char:" + PRIORITY_CN_CHAR + " en_letter:" + PRIORITY_EN_LETTER + " num:" + PRIORITY_NUM + " other:" + PRIORITY_OTHER
+                + "\nen_symbol:" + PRIORITY_EN_SYMBOL + " space:" + PRIORITY_SPACE + " newline:" + PRIORITY_NEWLINE);
+    }
+
     /**
      * 获得字符的优先级
      */

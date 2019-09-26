@@ -16,7 +16,7 @@ public class TextSeparator {
     private int charIndex;
     private int unitIndex;
 
-    private int contentIndex;
+    int contentIndex;
     private LinkedList<Unit> contentUnits = new LinkedList<>();
 
     private int partIndex;

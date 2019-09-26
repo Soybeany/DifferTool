@@ -8,7 +8,7 @@ import java.util.LinkedList;
  * 由一段文本拆分而成的单元，主要分为ContentUnit与LowPriorityUnit
  * <br>Created by Soybeany on 2019/9/11.
  */
-public class Unit {
+public class Unit implements Comparable<Unit> {
 
     // ****************************************定位标识****************************************
 
@@ -76,6 +76,11 @@ public class Unit {
     }
 
     @Override
+    public int compareTo(Unit o) {
+        return unitIndex - o.unitIndex;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Unit) {
             return text.equals(((Unit) obj).text);
@@ -86,6 +91,17 @@ public class Unit {
     @Override
     public String toString() {
         return text + "(p:" + priority + " - ci:" + charIndex + " - ui:" + unitIndex + " - cui:" + contentUnitIndex + ")";
+    }
+
+    /**
+     * 获得上一个内容单元
+     */
+    public Unit preContentUnit() {
+        Unit unit = preUnit;
+        while (null != unit && unit.isLowPriorityUnit()) {
+            unit = unit.preUnit;
+        }
+        return unit;
     }
 
     /**
@@ -104,6 +120,10 @@ public class Unit {
      */
     public boolean isLowPriorityUnit() {
         return !PriorityUtils.isHighPriority(priority);
+    }
+
+    public Unit getContentUnitWithOffset(int offset) {
+        return getContentUnitWithOffset(offset, true);
     }
 
     /**
@@ -128,5 +148,19 @@ public class Unit {
         Unit unit = contentUnits.getLast();
         unit.isExceeded = true;
         return unit;
+    }
+
+    /**
+     * 是否比指定单元靠后
+     */
+    public boolean gt(Unit unit) {
+        return unitIndex > unit.unitIndex;
+    }
+
+    /**
+     * 是否比指定单元靠前
+     */
+    public boolean lt(Unit unit) {
+        return unitIndex < unit.unitIndex;
     }
 }

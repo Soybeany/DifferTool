@@ -1,9 +1,13 @@
 package differ.fast.treat;
 
+import differ.TimeSpendRecorder;
 import differ.fast.model.CompareResult;
 import differ.fast.model.TerminalUnit;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeSet;
 
 /**
  * 用于确定稳定单元分区的工具类
@@ -28,12 +32,13 @@ public class SectionUtils {
     /**
      * @param results 稳定的单元集合
      */
-    public static List<CompareResult> toSections(Set<CompareResult> results) {
+    public static List<CompareResult> toSections(List<CompareResult> results) {
         TreeSet<Node> naturalOrderSet = new TreeSet<>(COMPARATOR_TARGET);
         TreeSet<Node> matchSet = new TreeSet<>(COMPARATOR_SOURCE);
         for (CompareResult result : results) {
             onTraverseNodes(naturalOrderSet, matchSet, result);
         }
+        TimeSpendRecorder.INSTANCE.record("整理结果");
         List<CompareResult> result = new LinkedList<>();
         for (Node node : naturalOrderSet) {
             // 添加匹配的单元
@@ -55,6 +60,7 @@ public class SectionUtils {
                 }
             }
         }
+        TimeSpendRecorder.INSTANCE.record("整理结果2");
         return result;
     }
 
