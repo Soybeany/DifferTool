@@ -1,7 +1,7 @@
 package differ.fast.utils;
 
 import differ.fast.model.Change;
-import differ.fast.model.Index;
+import differ.fast.model.Range;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,17 +12,21 @@ import java.util.List;
  */
 public class LevenshteinUtils {
 
+    public static <T> Result compare(T[] input1, T[] input2) {
+        return compare(input1, input2, null, null);
+    }
+
     /**
      * 对比指定的两个数组
      */
-    public static <T> Result compare(T[] input1, T[] input2) {
-        Info<T> info = new Info<>(input1, input2);
-        int sourceIndex = input1.length - 1;
-        int targetIndex = input2.length - 1;
-        Integer value = calculate(info, sourceIndex, targetIndex);
+    public static <T> Result compare(T[] input1, T[] input2, Range sRange, Range tRange) {
+        Info<T> info = new Info<>(input1, input2, sRange, tRange);
+        int sourceIndex = (null != sRange ? sRange.to : input1.length) - 1;
+        int targetIndex = (null != tRange ? tRange.to : input2.length) - 1;
+        calculate(info, sourceIndex, targetIndex);
         LinkedList<Change> changes = new LinkedList<>();
         traverse(info, changes, sourceIndex, targetIndex);
-        return new Result(changes, value * 1.0f / Math.max(input1.length, input2.length));
+        return new Result(changes, input1.length, input2.length);
     }
 
     private static <T> Integer calculate(Info<T> info, int sourceIndex, int targetIndex) {
@@ -46,11 +50,10 @@ public class LevenshteinUtils {
 
     private static <T> void traverse(Info<T> info, LinkedList<Change> result, int sourceIndex, int targetIndex) {
         Integer value = info.getValue(sourceIndex, targetIndex);
-        if (-1 == sourceIndex || -1 == targetIndex) {
+        if (0 == value) {
             return;
         }
         // 值相等的不处理
-        int leftTop = info.getValue(sourceIndex - 1, targetIndex - 1);
         if (info.isElementEqual(sourceIndex, targetIndex)) {
             traverse(info, result, sourceIndex - 1, targetIndex - 1);
             return;
@@ -58,31 +61,32 @@ public class LevenshteinUtils {
         // 不相等，按需走
         int tmpValue = value - 1;
         Change change = result.isEmpty() ? null : result.getFirst();
-        int left = info.getValue(sourceIndex - 1, targetIndex);
+        Integer left = info.getValue(sourceIndex - 1, targetIndex);
+        Integer top = info.getValue(sourceIndex, targetIndex - 1);
         // “删除”操作
-        if (left == tmpValue) {
+        if (null == left || left == tmpValue) {
             if (null == change || Change.DELETE != change.type) {
-                change = new Change(Change.DELETE, new Index(sourceIndex), null);
+                change = new Change(Change.DELETE, new Range(), null);
             }
-            change.source.to = sourceIndex + 1;
+            change.source.setupWith1Offset(sourceIndex);
             traverse(info, result, sourceIndex - 1, targetIndex);
         }
-        // “修改”操作
-        else if (leftTop == tmpValue) {
-            if (null == change || Change.MODIFY != change.type) {
-                change = new Change(Change.MODIFY, new Index(sourceIndex), new Index(targetIndex));
-            }
-            change.source.to = sourceIndex + 1;
-            change.target.to = targetIndex + 1;
-            traverse(info, result, sourceIndex - 1, targetIndex - 1);
-        }
         // “新增”操作
-        else {
+        else if (null == top || top == tmpValue) {
             if (null == change || Change.ADD != change.type) {
-                change = new Change(Change.ADD, null, new Index(targetIndex));
+                change = new Change(Change.ADD, null, new Range());
             }
-            change.target.to = targetIndex + 1;
+            change.target.setupWith1Offset(targetIndex);
             traverse(info, result, sourceIndex, targetIndex - 1);
+        }
+        // “修改”操作
+        else {
+            if (null == change || Change.MODIFY != change.type) {
+                change = new Change(Change.MODIFY, new Range(), new Range());
+            }
+            change.source.setupWith1Offset(sourceIndex);
+            change.target.setupWith1Offset(targetIndex);
+            traverse(info, result, sourceIndex - 1, targetIndex - 1);
         }
         result.add(change);
     }
@@ -92,23 +96,45 @@ public class LevenshteinUtils {
         T[] target;
         Integer[][] matrix;
 
-        Info(T[] source, T[] target) {
+        private int sFromIndex;
+        private int tFromIndex;
+
+        /**
+         * @param sRange 可空，表示不限制范围
+         * @param tRange 可空，表示不限制范围
+         */
+        Info(T[] source, T[] target, Range sRange, Range tRange) {
             this.source = source;
             this.target = target;
-            matrix = new Integer[target.length + 1][source.length + 1];
+            int sLength = source.length;
+            int tLength = target.length;
+            if (null != sRange) {
+                this.sFromIndex = sRange.from;
+                sLength = sRange.length();
+            }
+            if (null != tRange) {
+                this.tFromIndex = tRange.from;
+                tLength = tRange.length();
+            }
+            matrix = new Integer[tLength + 1][sLength + 1];
             init();
         }
 
         boolean isElementEqual(int sourceIndex, int targetIndex) {
-            return source[sourceIndex].equals(target[targetIndex]);
+            if (sourceIndex >= 0 && targetIndex >= 0) {
+                return source[sourceIndex].equals(target[targetIndex]);
+            }
+            return false;
         }
 
         Integer getValue(int sourceIndex, int targetIndex) {
-            return matrix[targetIndex + 1][sourceIndex + 1];
+            int sIndex = sourceIndex - sFromIndex + 1;
+            int tIndex = targetIndex - tFromIndex + 1;
+            return (sIndex >= 0 && tIndex >= 0) ? matrix[tIndex][sIndex] : null;
         }
 
         void setValue(int sourceIndex, int targetIndex, Integer value) {
-            matrix[targetIndex + 1][sourceIndex + 1] = value;
+            matrix[targetIndex - tFromIndex + 1][sourceIndex - sFromIndex + 1] = value;
         }
 
         private void init() {
@@ -132,13 +158,19 @@ public class LevenshteinUtils {
         public final List<Change> changes;
 
         /**
+         * 莱文斯坦距离
+         */
+        public final int distance;
+
+        /**
          * 相似度，范围0~1
          */
         public final float similarity;
 
-        Result(List<Change> changes, float similarity) {
+        Result(List<Change> changes, int length1, int length2) {
             this.changes = changes;
-            this.similarity = similarity;
+            this.distance = changes.size();
+            this.similarity = distance * 1.0f / Math.max(length1, length2);
         }
     }
 }
