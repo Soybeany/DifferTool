@@ -38,17 +38,16 @@ public class ImprovedLSUtils extends LevenshteinUtils {
             }
             // 常规处理
             LevenshteinUtils.compare(result, source, target, sRange, tRange);
-            if (changes.isEmpty()) {
-                continue;
-            }
-            Change lastChange = changes.getLast();
             int sOffset = 0, tOffset = 0;
-            if (Change.DELETE == lastChange.type && lastChange.isChangeContinuous(Change.DELETE, sRange.to, tRange.to)) {
-                changes.removeLast();
-                sOffset = lastChange.source.length();
-            } else if (Change.ADD == lastChange.type && lastChange.isChangeContinuous(Change.ADD, sRange.to, tRange.to)) {
-                changes.removeLast();
-                tOffset = lastChange.target.length();
+            if (!changes.isEmpty()) {
+                Change lastChange = changes.getLast();
+                if (Change.DELETE == lastChange.type && lastChange.isChangeContinuous(Change.DELETE, sRange.to, tRange.to)) {
+                    changes.removeLast();
+                    sOffset = lastChange.source.length();
+                } else if (Change.ADD == lastChange.type && lastChange.isChangeContinuous(Change.ADD, sRange.to, tRange.to)) {
+                    changes.removeLast();
+                    tOffset = lastChange.target.length();
+                }
             }
             sRange.shift(SECTION_LENGTH - sOffset, source.length);
             tRange.shift(SECTION_LENGTH - tOffset, target.length);

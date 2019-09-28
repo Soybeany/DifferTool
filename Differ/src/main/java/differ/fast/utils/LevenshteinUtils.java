@@ -26,103 +26,91 @@ public class LevenshteinUtils {
         Info<T> info = new Info<>(source, target, sRange, tRange);
         int sourceIndex = (null != sRange ? sRange.to : source.length) - 1;
         int targetIndex = (null != tRange ? tRange.to : target.length) - 1;
-        calculate(info, sourceIndex, targetIndex);
-        traverse(info, result.changes, sourceIndex, targetIndex);
+        parseNode(result.changes, calculate(info, sourceIndex, targetIndex));
     }
 
     // ****************************************内部方法****************************************
 
-    private static <T> Integer calculate(Info<T> info, int sourceIndex, int targetIndex) {
-        Integer value = info.getValue(sourceIndex, targetIndex);
-        if (null == value) {
-            Integer leftTop = calculate(info, sourceIndex - 1, targetIndex - 1);
+    private static <T> Node calculate(Info<T> info, int sourceIndex, int targetIndex) {
+        Node curNode = info.getValue(sourceIndex, targetIndex);
+        if (null == curNode) {
+            Node leftTopNode = calculate(info, sourceIndex - 1, targetIndex - 1);
             // 若元素相等，取矩阵左上角的值
             if (info.isElementEqual(sourceIndex, targetIndex)) {
-                value = leftTop;
+                curNode = leftTopNode.createNext(sourceIndex, targetIndex);
             }
             // 不相等，则取左、左上角、上三者的最小值，然后+1；
             else {
-                Integer left = calculate(info, sourceIndex - 1, targetIndex);
-                Integer top = calculate(info, sourceIndex, targetIndex - 1);
-                value = Math.min(leftTop, Math.min(left, top)) + 1;
+                Node leftNode = calculate(info, sourceIndex - 1, targetIndex);
+                Node topNode = calculate(info, sourceIndex, targetIndex - 1);
+                // 删除
+                if (leftNode.lt(leftTopNode) && leftNode.lt(topNode)) {
+                    curNode = leftNode.createNext(sourceIndex, targetIndex);
+                }
+                // 新增
+                else if (topNode.lt(leftTopNode)) {
+                    curNode = topNode.createNext(sourceIndex, targetIndex);
+                }
+                // 修改
+                else {
+                    curNode = leftTopNode.createNext(sourceIndex, targetIndex);
+                }
+                curNode.value += 1;
             }
-            info.setValue(sourceIndex, targetIndex, value);
+            info.setValue(sourceIndex, targetIndex, curNode);
         }
-        return value;
+        return curNode;
     }
 
-    private static <T> void traverse(Info<T> info, LinkedList<Change> result, int sourceIndex, int targetIndex) {
-        Integer value = info.getValue(sourceIndex, targetIndex);
-        if (0 == value) {
+    private static void parseNode(LinkedList<Change> changes, Node node) {
+        if (0 == node.value) {
             return;
         }
-        // 值相等的不处理
-        if (info.isElementEqual(sourceIndex, targetIndex)) {
-            traverse(info, result, sourceIndex - 1, targetIndex - 1);
+        // 使用递归，将反序的节点处理变为正序处理
+        parseNode(changes, node.pre);
+        // 相等
+        if (node.value == node.pre.value) {
             return;
         }
-        // 不相等，按需走
-        int tmpValue = value - 1, type;
-        Integer left = info.getValue(sourceIndex - 1, targetIndex);
-        Integer top = info.getValue(sourceIndex, targetIndex - 1);
-        // “删除”操作
-        if (null == left || left == tmpValue) {
-            type = Change.DELETE;
-            traverse(info, result, sourceIndex - 1, targetIndex);
+        // 修改 对角线，相邻节点的下标相差1
+        if (node.sourceIndex == node.pre.sourceIndex + 1 && node.targetIndex == node.pre.targetIndex + 1) {
+            Change change = getSuitableChange(changes, Change.MODIFY, node.sourceIndex, node.targetIndex);
+            change.source.to = node.sourceIndex + 1; // from与to之间需相差1
+            change.target.to = node.targetIndex + 1;
         }
-        // “新增”操作
-        else if (null == top || top == tmpValue) {
-            type = Change.ADD;
-            traverse(info, result, sourceIndex, targetIndex - 1);
+        // 删除
+        else if (node.sourceIndex == node.pre.sourceIndex + 1) {
+            Change change = getSuitableChange(changes, Change.DELETE, node.sourceIndex, node.targetIndex);
+            change.source.to = node.sourceIndex + 1;
         }
-        // “修改”操作
+        // 新增
         else {
-            type = Change.MODIFY;
-            traverse(info, result, sourceIndex - 1, targetIndex - 1);
+            Change change = getSuitableChange(changes, Change.ADD, node.sourceIndex, node.targetIndex);
+            change.target.to = node.targetIndex + 1;
         }
-        // 保存变更
-        saveChange(result, type, sourceIndex, targetIndex);
     }
 
-    /**
-     * 保存变更
-     */
-    private static void saveChange(LinkedList<Change> result, int type, int sourceIndex, int targetIndex) {
-        Change change = getSuitableChange(result, type, sourceIndex, targetIndex);
-        switch (type) {
-            case Change.DELETE:
-                change.source.to = sourceIndex + 1;
-                break;
-            case Change.ADD:
-                change.target.to = targetIndex + 1;
-                break;
-            case Change.MODIFY:
-                change.source.to = sourceIndex + 1;
-                change.target.to = targetIndex + 1;
-                break;
-        }
-    }
 
     /**
      * 获得合适的变更(复用/新增)
      */
-    private static Change getSuitableChange(LinkedList<Change> result, int type, int sourceIndex, int targetIndex) {
-        Change change = result.isEmpty() ? null : result.getLast();
+    private static Change getSuitableChange(LinkedList<Change> changes, int type, int sourceIndex, int targetIndex) {
+        Change change = changes.isEmpty() ? null : changes.getLast();
         if (null != change && change.type == type && change.isChangeContinuous(type, sourceIndex, targetIndex)) {
             change.count++;
             return change;
         }
         change = new Change(type, new Range(), new Range());
-        result.add(change);
+        changes.add(change);
         // 初始化设置
         switch (type) {
             case Change.DELETE:
                 change.source.from = sourceIndex;
-                change.target.setup(targetIndex + 1, targetIndex + 1);
+                change.target.setup(targetIndex + 1, targetIndex + 1); // target的下一位下标作为删除基点
                 break;
             case Change.ADD:
                 change.target.from = targetIndex;
-                change.source.setup(sourceIndex + 1, sourceIndex + 1);
+                change.source.setup(sourceIndex + 1, sourceIndex + 1); // source下一位下标作为插入基点
                 break;
             case Change.MODIFY:
                 change.source.from = sourceIndex;
@@ -162,7 +150,7 @@ public class LevenshteinUtils {
     private static class Info<T> {
         T[] source;
         T[] target;
-        Integer[][] matrix;
+        Node[][] matrix;
 
         private int sFromIndex;
         private int tFromIndex;
@@ -184,7 +172,7 @@ public class LevenshteinUtils {
                 this.tFromIndex = tRange.from;
                 tLength = tRange.length();
             }
-            matrix = new Integer[tLength + 1][sLength + 1];
+            matrix = new Node[tLength + 1][sLength + 1];
             init();
         }
 
@@ -195,27 +183,54 @@ public class LevenshteinUtils {
             return false;
         }
 
-        Integer getValue(int sourceIndex, int targetIndex) {
+        Node getValue(int sourceIndex, int targetIndex) {
             int sIndex = sourceIndex - sFromIndex + 1;
             int tIndex = targetIndex - tFromIndex + 1;
             return (sIndex >= 0 && tIndex >= 0) ? matrix[tIndex][sIndex] : null;
         }
 
-        void setValue(int sourceIndex, int targetIndex, Integer value) {
+        void setValue(int sourceIndex, int targetIndex, Node value) {
             matrix[targetIndex - tFromIndex + 1][sourceIndex - sFromIndex + 1] = value;
         }
 
         private void init() {
             // 原点
-            matrix[0][0] = 0;
+            matrix[0][0] = new Node(0, -1, -1, null);
             // 横向初始化
+            Node node = matrix[0][0];
             for (int i = 1; i < matrix[0].length; i++) {
-                matrix[0][i] = i;
+                matrix[0][i] = new Node(i, -1, i - 1, node);
+                node = matrix[0][i];
             }
             // 纵向初始化
+            node = matrix[0][0];
             for (int i = 1; i < matrix.length; i++) {
-                matrix[i][0] = i;
+                matrix[i][0] = new Node(i, i - 1, -1, node);
+                node = matrix[i][0];
             }
+        }
+    }
+
+    private static class Node {
+        int value;
+        int sourceIndex;
+        int targetIndex;
+
+        Node pre;
+
+        Node(int value, int sourceIndex, int targetIndex, Node pre) {
+            this.value = value;
+            this.sourceIndex = sourceIndex;
+            this.targetIndex = targetIndex;
+            this.pre = pre;
+        }
+
+        boolean lt(Node node) {
+            return value < node.value;
+        }
+
+        Node createNext(int sourceIndex, int targetIndex) {
+            return new Node(value, sourceIndex, targetIndex, this);
         }
     }
 }
