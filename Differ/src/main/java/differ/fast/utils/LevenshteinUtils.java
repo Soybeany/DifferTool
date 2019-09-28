@@ -4,7 +4,6 @@ import differ.fast.model.Change;
 import differ.fast.model.Range;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * 传统 莱文斯坦(距离) 工具类
@@ -14,21 +13,21 @@ public class LevenshteinUtils {
 
     // ****************************************公开方法****************************************
 
-    public static <T> Result compare(T[] input1, T[] input2) {
-        return compare(input1, input2, null, null);
+    public static <T> Result compare(T[] source, T[] target) {
+        Result result = new Result();
+        compare(result, source, target, null, null);
+        return result;
     }
 
     /**
      * 对比指定的两个数组
      */
-    public static <T> Result compare(T[] input1, T[] input2, Range sRange, Range tRange) {
-        Info<T> info = new Info<>(input1, input2, sRange, tRange);
-        int sourceIndex = (null != sRange ? sRange.to : input1.length) - 1;
-        int targetIndex = (null != tRange ? tRange.to : input2.length) - 1;
-        int instance = calculate(info, sourceIndex, targetIndex);
-        LinkedList<Change> changes = new LinkedList<>();
-        traverse(info, changes, sourceIndex, targetIndex);
-        return new Result(changes, instance, input1.length, input2.length);
+    public static <T> void compare(Result result, T[] source, T[] target, Range sRange, Range tRange) {
+        Info<T> info = new Info<>(source, target, sRange, tRange);
+        int sourceIndex = (null != sRange ? sRange.to : source.length) - 1;
+        int targetIndex = (null != tRange ? tRange.to : target.length) - 1;
+        calculate(info, sourceIndex, targetIndex);
+        traverse(info, result.changes, sourceIndex, targetIndex);
     }
 
     // ****************************************内部方法****************************************
@@ -109,7 +108,8 @@ public class LevenshteinUtils {
      */
     private static Change getSuitableChange(LinkedList<Change> result, int type, int sourceIndex, int targetIndex) {
         Change change = result.isEmpty() ? null : result.getLast();
-        if (null != change && change.type == type && isChangeContinuous(change, type, sourceIndex, targetIndex)) {
+        if (null != change && change.type == type && change.isChangeContinuous(type, sourceIndex, targetIndex)) {
+            change.count++;
             return change;
         }
         change = new Change(type, new Range(), new Range());
@@ -118,11 +118,11 @@ public class LevenshteinUtils {
         switch (type) {
             case Change.DELETE:
                 change.source.from = sourceIndex;
-                change.target.with0Length(targetIndex + 1);
+                change.target.setup(targetIndex + 1, targetIndex + 1);
                 break;
             case Change.ADD:
                 change.target.from = targetIndex;
-                change.source.with0Length(sourceIndex + 1);
+                change.source.setup(sourceIndex + 1, sourceIndex + 1);
                 break;
             case Change.MODIFY:
                 change.source.from = sourceIndex;
@@ -132,43 +132,30 @@ public class LevenshteinUtils {
         return change;
     }
 
-    /**
-     * 判断变更是否连续
-     */
-    private static boolean isChangeContinuous(Change change, int type, int sourceIndex, int targetIndex) {
-        switch (type) {
-            case Change.DELETE:
-                return change.source.to == sourceIndex;
-            case Change.ADD:
-                return change.target.to == targetIndex;
-            case Change.MODIFY:
-                return change.source.to == sourceIndex && change.target.to == targetIndex;
-        }
-        return false;
-    }
-
     // ****************************************内部类****************************************
 
     public static class Result {
         /**
          * 变更的内容列表
          */
-        public final List<Change> changes;
+        public final LinkedList<Change> changes = new LinkedList<>();
 
         /**
-         * 莱文斯坦距离
+         * 获得 莱文斯坦距离
          */
-        public final int distance;
+        public int getDistance() {
+            int distance = 0;
+            for (Change change : changes) {
+                distance += change.count;
+            }
+            return distance;
+        }
 
         /**
-         * 相似度，范围0~1
+         * 获得 相似度，范围0~1
          */
-        public final float similarity;
-
-        Result(List<Change> changes, int instance, int length1, int length2) {
-            this.changes = changes;
-            this.distance = instance;
-            this.similarity = distance * 1.0f / Math.max(length1, length2);
+        public float getSimilarity(int source, int target) {
+            return getDistance() * 1.0f / Math.max(source, target);
         }
     }
 
