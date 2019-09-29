@@ -28,7 +28,7 @@ public class ImprovedLSUtils extends LevenshteinUtils {
         boolean hasSContent, hasTContent;
         while ((hasSContent = sRange.from < source.length) | (hasTContent = tRange.from < target.length)) {
             LinkedList<Change> changes = result.changes;
-            // 内容已遍历完，提取结束
+            // 内容已遍历完，提前结束
             if (!hasSContent) {
                 changes.add(new Change(Change.ADD, sRange, tRange.to(target.length)));
                 break;

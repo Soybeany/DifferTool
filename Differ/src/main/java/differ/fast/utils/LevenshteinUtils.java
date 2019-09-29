@@ -145,6 +145,23 @@ public class LevenshteinUtils {
         public float getSimilarity(int source, int target) {
             return getDistance() * 1.0f / Math.max(source, target);
         }
+
+        public void print(Object[] input1, Object[] input2) {
+            for (Change change : changes) {
+                String msg = change.type + "  " + change.count + "  ";
+                msg += "source:" + getString(input1, change.source.from, change.source.to) + "(" + change.source.from + "-" + change.source.to + ")  ";
+                msg += "target:" + getString(input2, change.target.from, change.target.to) + "(" + change.target.from + "-" + change.target.to + ")";
+                System.out.println(msg);
+            }
+        }
+
+        private String getString(Object[] input1, int from, int to) {
+            StringBuilder builder = new StringBuilder();
+            for (int i = from; i < to; i++) {
+                builder.append(input1[i].toString());
+            }
+            return builder.toString();
+        }
     }
 
     private static class Info<T> {
@@ -177,16 +194,11 @@ public class LevenshteinUtils {
         }
 
         boolean isElementEqual(int sourceIndex, int targetIndex) {
-            if (sourceIndex >= 0 && targetIndex >= 0) {
-                return source[sourceIndex].equals(target[targetIndex]);
-            }
-            return false;
+            return source[sourceIndex].equals(target[targetIndex]);
         }
 
         Node getValue(int sourceIndex, int targetIndex) {
-            int sIndex = sourceIndex - sFromIndex + 1;
-            int tIndex = targetIndex - tFromIndex + 1;
-            return (sIndex >= 0 && tIndex >= 0) ? matrix[tIndex][sIndex] : null;
+            return matrix[targetIndex - tFromIndex + 1][sourceIndex - sFromIndex + 1];
         }
 
         void setValue(int sourceIndex, int targetIndex, Node value) {
@@ -199,13 +211,13 @@ public class LevenshteinUtils {
             // 横向初始化
             Node node = matrix[0][0];
             for (int i = 1; i < matrix[0].length; i++) {
-                matrix[0][i] = new Node(i, -1, i - 1, node);
+                matrix[0][i] = new Node(i, i - 1, -1, node);
                 node = matrix[0][i];
             }
             // 纵向初始化
             node = matrix[0][0];
             for (int i = 1; i < matrix.length; i++) {
-                matrix[i][0] = new Node(i, i - 1, -1, node);
+                matrix[i][0] = new Node(i, -1, i - 1, node);
                 node = matrix[i][0];
             }
         }
