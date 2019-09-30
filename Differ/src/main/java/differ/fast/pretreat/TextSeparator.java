@@ -2,8 +2,6 @@ package differ.fast.pretreat;
 
 import differ.fast.model.Unit;
 
-import java.util.LinkedList;
-
 /**
  * 文本分隔者
  * <br>Created by Soybeany on 2019/9/11.
@@ -15,9 +13,6 @@ public class TextSeparator {
 
     private int charIndex;
     private int unitIndex;
-
-    int contentIndex;
-    private LinkedList<Unit> contentUnits = new LinkedList<>();
 
     private int partIndex;
 
@@ -42,11 +37,8 @@ public class TextSeparator {
         Unit unit = new Unit(charIndex, unitIndex++, partIndex, priority);
         int separateType = unit.priority & PriorityUtils.SEPARATE_SWITCHER;
         // 补充单元信息
-        if (!unit.isLowPriorityUnit()) {
-            unit.contentUnitIndex = contentIndex++;
-            unit.contentUnits = contentUnits;
-            contentUnits.add(unit);
-        } else if (PriorityUtils.PRIORITY_NEWLINE == priority) {
+        if (PriorityUtils.PRIORITY_NEWLINE == priority) {
+            unit.paramIndex = ++partIndex;
             partIndex++;
         }
         // 单元分类

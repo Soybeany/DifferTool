@@ -14,17 +14,25 @@ public class Range {
      */
     public int to = -1;
 
+    /**
+     * 范围偏移指定距离
+     *
+     * @param maxTo 允许最大偏移到的下标
+     */
+    public void shift(int offset, int maxTo) {
+        from = Math.min(from + offset, maxTo);
+        to = Math.min(to + offset, maxTo);
+    }
+
     public Range setup(int from, int to) {
         this.from = from;
         this.to = to;
         return this;
     }
 
-    /**
-     * 设置只有1偏移量的范围
-     */
-    public void setupWith1Offset(int from) {
-        setup(from, from + 1);
+    public Range to(int to) {
+        this.to = to;
+        return this;
     }
 
     public int length() {

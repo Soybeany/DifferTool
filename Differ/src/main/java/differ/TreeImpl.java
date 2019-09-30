@@ -1,6 +1,5 @@
 package differ;
 
-import differ.fast.pretreat.FastStruct;
 import org.junit.Test;
 import tree.SimpleTree;
 import tree.node.TreeNode;
@@ -23,7 +22,6 @@ public class TreeImpl implements IDifferUtil {
 
     @Test
     public void testGroup() throws IOException {
-        FastStruct groupA = new FastStruct(loadFile(), true);
 //        FastStruct groupA = new FastStruct(textD, false);
 //        List<Map<String, List<Unit>>> results = FastStructUtils.toAssistUnits(groupA);
 //        System.out.println(results.size());
