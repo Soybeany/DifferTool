@@ -5,12 +5,12 @@ package differ.fast.model;
  */
 public class Range {
     /**
-     * 开始的下标(包含)
+     * 开始的下标
      */
     public int from = -1;
 
     /**
-     * 结束的下标(不包含)
+     * 结束的下标
      */
     public int to = -1;
 
@@ -19,8 +19,8 @@ public class Range {
      *
      * @param maxTo 允许最大偏移到的下标
      */
-    public void shift(int offset, int maxTo) {
-        from = Math.min(from + offset, maxTo);
+    public void shift(int offset, int maxFrom, int maxTo) {
+        from = Math.min(from + offset, maxFrom);
         to = Math.min(to + offset, maxTo);
     }
 
@@ -30,12 +30,7 @@ public class Range {
         return this;
     }
 
-    public Range to(int to) {
-        this.to = to;
-        return this;
-    }
-
     public int length() {
-        return to - from;
+        return to - from + 1;
     }
 }

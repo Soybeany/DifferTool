@@ -1,7 +1,6 @@
 package Levenshtein;
 
 import differ.fast.model.Range;
-import differ.fast.utils.LevenshteinUtils;
 import org.junit.Test;
 
 /**
@@ -19,19 +18,17 @@ public class DistanceUtils {
 
         Character[] input1Arr = toCharArr(input1);
         Character[] input2Arr = toCharArr(input2);
-
-        LevenshteinUtils.Result result = null;
 //        }
         Range sRange = new Range().setup(0, 8);
         Range tRange = new Range().setup(0, 7);
 //        LevenshteinUtils.Result result = LevenshteinUtils.compare(input1Arr, input2Arr);
 //        for (int i = 0; i < 9000; i++) {
-        result = LevenshteinUtils.compare(input1Arr, input2Arr);
-//            result = LevenshteinUtils.compare(input1Arr, input2Arr, sRange, tRange);
-//        }
-        result.print(input1Arr, input2Arr);
-
-        System.out.println("最长距离:" + result.getDistance());
+//        result = LevenshteinUtils.compare(input1Arr, input2Arr);
+////            result = LevenshteinUtils.compare(input1Arr, input2Arr, sRange, tRange);
+////        }
+//        result.print(input1Arr, input2Arr);
+//
+//        System.out.println("最长距离:" + result.getDistance());
     }
 
     private static Character[] toCharArr(String input) {

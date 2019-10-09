@@ -3,54 +3,74 @@ package differ.fast.model;
 /**
  * 内容的变动
  */
-public class Change {
-    /**
-     * 锚点的偏移
-     */
-    public static final int ANCHOR_OFFSET = 1;
-
-    public static final int ADD = 1; // 增加
-    public static final int MODIFY = 2; // 修改
-    public static final int DELETE = 3; // 删除
-
-    /**
-     * 所包含变动的数目
-     */
-    public int count = 1;
+public abstract class Change {
+    public static final byte ADD = 1; // 增加
+    public static final byte MODIFY = 2; // 修改
+    public static final byte DELETE = 3; // 删除
 
     /**
      * 变更类型
      */
-    public final int type;
+    public byte type;
 
     /**
-     * 数据源
+     * 使用对象表示
      */
-    public Range source;
+    public static class Obj<T> extends Change {
 
-    /**
-     * 目标
-     */
-    public Range target;
+        /**
+         * 数据源
+         */
+        public T source;
 
-    public Change(int type, Range source, Range target) {
-        this.type = type;
-        this.source = source;
-        this.target = target;
+        /**
+         * 目标
+         */
+        public T target;
+
+        public Obj(byte type, T source, T target) {
+            this.type = type;
+            this.source = source;
+            this.target = target;
+        }
+
+        @Override
+        public String toString() {
+            return type + "  " + source + "  " + target;
+        }
     }
 
     /**
-     * 判断变更是否连续
+     * 使用下标表示
      */
-    public boolean isChangeContinuous(int type, int sourceIndex, int targetIndex) {
-        switch (type) {
-            case Change.DELETE:
-                return source.to == sourceIndex && target.to == targetIndex + ANCHOR_OFFSET;
-            case Change.ADD:
-                return target.to == targetIndex && source.to == sourceIndex + ANCHOR_OFFSET;
-            case Change.MODIFY:
-                return source.to == sourceIndex && target.to == targetIndex;
+    public static class Index extends Change {
+
+        /**
+         * 所包含变动的数目
+         */
+        public int count = 1;
+
+        /**
+         * 数据源
+         */
+        public Range source;
+
+        /**
+         * 目标
+         */
+        public Range target;
+
+        public Index(byte type, Range source, Range target) {
+            this.type = type;
+            this.source = source;
+            this.target = target;
         }
-        return false;
+
+        /**
+         * 判断变更是否连续
+         */
+        public boolean isChangeContinuous(int sourceIndex, int targetIndex) {
+            return source.to == sourceIndex && target.to == targetIndex;
+        }
     }
 }

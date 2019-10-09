@@ -1,10 +1,12 @@
 package differ.fast.pretreat;
 
 import differ.fast.model.Paragraph;
-import differ.fast.model.Unit;
+import differ.fast.model.unit.AffixUnit;
+import differ.fast.model.unit.ContentUnit;
 import differ.fast.utils.Md5Utils;
 
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 结构化工具类
@@ -12,47 +14,105 @@ import java.util.LinkedList;
  */
 public class StructureUtils {
 
+    private static final char CONTENT_DIVIDE_CHAR = '-'; // 用于区分内容位置
+    private static final char SPLIT_DIVIDE_CHAR = 'A'; // 用于区分分隔符位置
+
     /**
-     * 将指定字符串变为段落列表
+     * 将指定字符串格式化
      */
-    public static LinkedList<Paragraph> toParams(String input) throws Exception {
+    public static Result format(String input) throws Exception {
         // 初始化变量
-        int partIndex = -1;
-        Unit lastUnit = null, curUnit;
-        Paragraph paragraph = null;
-        StringBuilder builder = new StringBuilder();
-        LinkedList<Paragraph> result = new LinkedList<>();
-        TextSeparator separator = new TextSeparator(input);
+        int paragraphIndex = 0;
+        Paragraph paragraph = new Paragraph(paragraphIndex, 0);
+        Result result = new Result();
+        UnitExtractor extractor = new UnitExtractor(input);
         // 整理单元
-        while (null != (curUnit = separator.getNextUnit())) {
-            // 若段落不同，则新建一个段落
-            if (null == paragraph || curUnit.paramIndex != partIndex) {
-                // 将缓存中的内容取出，并计算其md5
-                calculateMd5(paragraph, builder);
-                // 值设置
-                result.add(paragraph = new Paragraph());
-                partIndex = curUnit.paramIndex;
+        while (null != (extractor.curUnit = extractor.getNextUnit())) {
+            // 内容单元
+            if (PriorityUtils.isHighPriority(extractor.curUnit.priority)) {
+                paragraph.units.add(extractor.lastContentUnit = (ContentUnit) extractor.curUnit);
+                extractor.contentBuilder.append(extractor.curUnit.text).append(CONTENT_DIVIDE_CHAR);
+                result.contentUnitCount++;
             }
-            // 值设置
-            paragraph.units.add(curUnit);
-            builder.append(curUnit.text);
-            // 链接设置
-            if (null != lastUnit) {
-                lastUnit.nextUnit = curUnit;
-                curUnit.preUnit = lastUnit;
+            // 段落分隔单元
+            else if (PriorityUtils.PRIORITY_NEWLINE == extractor.curUnit.priority) {
+                paragraph.newLineUnit = (AffixUnit) extractor.curUnit;
+                setupEndOfParagraph(result.paragraphs, paragraph, extractor);
+                // 切换到新的段落，清空缓存
+                paragraph = new Paragraph(++paragraphIndex, extractor.curUnit.charEndIndex);
+                extractor.lastContentUnit = null;
             }
-            lastUnit = curUnit;
+            // 内容分隔单元
+            else {
+                makeSureLastContentUnitNonNull(paragraph, extractor);
+                extractor.lastContentUnit.separateUnit = (AffixUnit) extractor.curUnit;
+                extractor.splitBuilder.append(extractor.curUnit.text).append(SPLIT_DIVIDE_CHAR);
+            }
+            result.unitCount++;
         }
         // 补充最后一个段落的设置
-        calculateMd5(paragraph, builder);
+        if (!paragraph.units.isEmpty()) {
+            setupEndOfParagraph(result.paragraphs, paragraph, extractor);
+        }
         return result;
     }
 
-    private static void calculateMd5(Paragraph paragraph, StringBuilder content) throws Exception {
-        if (null == paragraph || content.length() == 0) {
+    private static void setupEndOfParagraph(List<Paragraph> result, Paragraph paragraph, UnitExtractor extractor) throws Exception {
+        // 确保最后内容单元不为null
+        makeSureLastContentUnitNonNull(paragraph, extractor);
+        // 计算md5值
+        calculateMd5AndClearCache(paragraph, extractor);
+        // 将段落放入结果列表
+        result.add(paragraph);
+        // 设置段落的结束下标
+        paragraph.charEndIndex = extractor.lastContentUnit.charEndIndex;
+    }
+
+    private static void makeSureLastContentUnitNonNull(Paragraph paragraph, UnitExtractor extractor) {
+        if (null != extractor.lastContentUnit) {
             return;
         }
-        paragraph.md5 = Md5Utils.getByteArr(content.toString());
-        content.delete(0, content.length());
+        extractor.lastContentUnit = ContentUnit.newEmptyContentUnit(extractor.curUnit.charIndex, extractor.curUnit.unitIndex);
+        paragraph.units.add(extractor.lastContentUnit);
+    }
+
+    /**
+     * 计算段落的md5值，并清空StringBuilder中缓存的字符
+     */
+    private static void calculateMd5AndClearCache(Paragraph paragraph, UnitExtractor extractor) throws Exception {
+        // 计算内容部分
+        if (extractor.contentBuilder.length() > 0) {
+            paragraph.contentMd5 = Md5Utils.getByteArr(extractor.contentBuilder.toString());
+            extractor.contentBuilder.delete(0, extractor.contentBuilder.length());
+        }
+        // 计算分隔符部分
+        if (extractor.splitBuilder.length() > 0) {
+            paragraph.othersMd5 = Md5Utils.getByteArr(extractor.splitBuilder.toString());
+            extractor.splitBuilder.delete(0, extractor.splitBuilder.length());
+        }
+    }
+
+    public static class Result {
+        final List<Paragraph> paragraphs = new LinkedList<>();
+        int unitCount;
+        int contentUnitCount;
+
+        public Paragraph[] getParagraphs() {
+//            int size = 50;
+//            Paragraph[] result = new Paragraph[size];
+//            for (int i = 0; i < size; i++) {
+//                result[i] = paragraphs.get(i);
+//            }
+//            return result;
+            return this.paragraphs.toArray(new Paragraph[0]);
+        }
+
+        public int getUnitCount() {
+            return unitCount;
+        }
+
+        public int getContentUnitCount() {
+            return contentUnitCount;
+        }
     }
 }

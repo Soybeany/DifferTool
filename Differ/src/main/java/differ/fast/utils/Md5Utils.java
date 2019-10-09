@@ -20,6 +20,13 @@ public class Md5Utils {
      * 对比两组字节数组形式的md5码是否一致
      */
     public static boolean hasSameContent(byte[] input1, byte[] input2) {
+        // 预校验
+        if (null == input1 && null == input2) {
+            return true;
+        } else if (null == input1 || null == input2) {
+            return false;
+        }
+        // 遍历校验
         for (int i = 0; i < input2.length; i++) {
             if (input1[i] != input2[i]) {
                 return false;
