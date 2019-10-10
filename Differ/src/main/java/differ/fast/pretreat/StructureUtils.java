@@ -35,7 +35,7 @@ public class StructureUtils {
                 result.contentUnitCount++;
             }
             // 段落分隔单元
-            else if (PriorityUtils.PRIORITY_NEWLINE == extractor.curUnit.priority) {
+            else if (PriorityUtils.PRIORITY_NEWLINE == extractor.curUnit.priority && extractor.curUnit.text.length() > 1) {
                 paragraph.newLineUnit = (AffixUnit) extractor.curUnit;
                 setupEndOfParagraph(result.paragraphs, paragraph, extractor);
                 // 切换到新的段落，清空缓存
@@ -98,12 +98,6 @@ public class StructureUtils {
         int contentUnitCount;
 
         public Paragraph[] getParagraphs() {
-//            int size = 50;
-//            Paragraph[] result = new Paragraph[size];
-//            for (int i = 0; i < size; i++) {
-//                result[i] = paragraphs.get(i);
-//            }
-//            return result;
             return this.paragraphs.toArray(new Paragraph[0]);
         }
 
