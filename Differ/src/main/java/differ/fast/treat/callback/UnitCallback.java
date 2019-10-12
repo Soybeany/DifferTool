@@ -13,21 +13,24 @@ import java.util.List;
  */
 public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
 
-    public final List<Change.Index> changes = new LinkedList<>();
+    private List<Change.Index> changes;
+    private int distance;
 
-    @Override
-    public void onStart() {
-
+    public UnitCallback(List<Change.Index> changes) {
+        this.changes = changes;
     }
 
     @Override
-    public void onElementHandled(LinkedList<Change.Obj<Unit>> objs) {
+    public void onStart() {
+    }
+
+    @Override
+    public void onElementSame(LinkedList<Change.Obj<Unit>> objs) {
+    }
+
+    @Override
+    public void onElementChange(int changeType, LinkedList<Change.Obj<Unit>> objs) {
         Change.Obj<Unit> firstUnit = objs.getFirst();
-        int changeType = firstUnit.type;
-        // 若元素相同，不作处理
-        if (Change.SAME == changeType) {
-            return;
-        }
         Change.Obj<Unit> lastUnit = objs.getLast();
         Change.Index change = new Change.Index(changeType, new Range(), new Range());
         change.count = objs.size();
@@ -50,7 +53,11 @@ public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
 
     @Override
     public void onFinal(int distance) {
-        System.out.println("距离:" + distance);
+        this.distance = distance;
+    }
+
+    public int getDistance() {
+        return distance;
     }
 
     private int getIndex(boolean isPosAtEnd, Unit unit) {

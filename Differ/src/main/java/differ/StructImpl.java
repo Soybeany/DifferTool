@@ -17,6 +17,10 @@ public class StructImpl {
 
     private static String textA = "oh yes\nhey guy\nwhat can I do for you?\nwhat about that guy,\n who are you?";
     private static String textB = "what can I do for you?\n is that guy\n who talking?";
+
+//    private static String textA = "b d";
+//    private static String textB = "c d";
+
 //    private static String textA = "what is that\n";
 //    private static String textB = "about the fxxk";
 //    private static String textA = "what can I do for you? what is your problem? I don't known what happen. is that guy who talking?";
@@ -34,12 +38,12 @@ public class StructImpl {
 //        List<CompareResult> results = ContentTraverser.getResult(loadFile("D:\\test.txt"), loadFile("D:\\test3.txt"));
 //        List<CompareResult> results = ContentTraverser.getResult(loadFile("D:\\newTest1.txt"), loadFile("D:\\newTest2.txt"));
 //        List<CompareResult> sections = SectionUtils.toSections(results);
-        String input1 = textA, input2 = textB;
+//        String input1 = textA, input2 = textB;
 //        String input1 = loadFile("D:\\x1.txt"), input2 = loadFile("D:\\x2.txt");
-//        String input1 = loadFile("D:\\CSN329 - 1.txt"), input2 = loadFile("D:\\CSN329 - 2.txt");
+        String input1 = loadFile("D:\\CSN329 - 1.txt"), input2 = loadFile("D:\\CSN329 - 2.txt");
 //        String input1 = loadFile("D:\\test.txt"), input2 = loadFile("D:\\test2.txt");
 //        String input1 = loadFile("D:\\what1.txt"), input2 = loadFile("D:\\what2.txt");
-//        String input1 = loadFile("D:\\x1.txt"), input2 = loadFile("D:\\x2.txt");
+//        String input1 = loadFile("D:\\y1.txt"), input2 = loadFile("D:\\y2.txt");
 //        Paragraph[] params1 = toParamArr(StructureUtils.toParams(input1));
 //        Paragraph[] params2 = toParamArr(StructureUtils.toParams(input2));
 //        LevenshteinUtils.Result result = ImprovedLSUtils.compare(params1, params2);

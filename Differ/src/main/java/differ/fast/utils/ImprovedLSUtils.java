@@ -15,6 +15,11 @@ public class ImprovedLSUtils {
 
     private static final int SECTION_LENGTH = 50; // 每个分段的长度，必须大于0
 
+    @SuppressWarnings("unchecked")
+    public static <T> void compare(T[] source, T[] target, ICallback<T> callback) {
+        compare(source, target, IWeightProvider.Std.get(), callback);
+    }
+
     /**
      * 对比指定的两个数组
      */
@@ -62,9 +67,14 @@ public class ImprovedLSUtils {
         void onStart();
 
         /**
-         * 元素处理后的回调
+         * 元素相同的回调
          */
-        void onElementHandled(LinkedList<Change.Obj<T>> objs);
+        void onElementSame(LinkedList<Change.Obj<T>> objs);
+
+        /**
+         * 元素改变的回调
+         */
+        void onElementChange(int changeType, LinkedList<Change.Obj<T>> objs);
 
         /**
          * 处理后的回调
@@ -180,10 +190,11 @@ public class ImprovedLSUtils {
          * 冲刷结果
          */
         private void flush(ChangeInfo<T> info) {
-            if (Change.UNDEFINED == info.changeType) {
-                return;
+            if (Change.SAME == info.changeType) {
+                mCallback.onElementSame(info.changes);
+            } else if (Change.UNDEFINED != info.changeType) {
+                mCallback.onElementChange(info.changeType, info.changes);
             }
-            mCallback.onElementHandled(info.changes);
         }
     }
 }

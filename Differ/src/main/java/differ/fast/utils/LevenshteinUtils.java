@@ -13,6 +13,7 @@ public class LevenshteinUtils {
     /**
      * 对比指定的两个数组
      */
+    @SuppressWarnings("unchecked")
     public static <T> void compare(T[] source, T[] target, ICallback<T> callback) {
         compare(source, target, null, null, IWeightProvider.Std.get(), callback);
     }
@@ -188,9 +189,6 @@ public class LevenshteinUtils {
             return node.withVDelta(weight.getAddAction() + weight.getAddElement(target[node.tIndexInArr]));
         }
 
-        /**
-         * 与指定node左上角的node对比
-         */
         Node withVModify(Node node) {
             return node.withVDelta(weight.getModifyAction() + weight.getModifyElement(source[node.sIndexInArr], target[node.tIndexInArr]));
         }

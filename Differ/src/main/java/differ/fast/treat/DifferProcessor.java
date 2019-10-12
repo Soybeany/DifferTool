@@ -1,11 +1,12 @@
 package differ.fast.treat;
 
 import differ.fast.model.Change;
-import differ.fast.model.Unit;
-import differ.fast.pretreat.UnitExtractor;
-import differ.fast.treat.callback.UnitCallback;
+import differ.fast.model.Para;
+import differ.fast.pretreat.ParaExtractor;
+import differ.fast.treat.callback.ParaCallback;
 import differ.fast.utils.ImprovedLSUtils;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -23,17 +24,13 @@ public class DifferProcessor {
      * 获得单元级别的差异列表
      */
     public static List<Change.Index> getUnitChanges(String source, String target) throws Exception {
-        List<Unit> sUnits = UnitExtractor.format(source);
-        List<Unit> tUnits = UnitExtractor.format(target);
+        Para[] sParas = ParaExtractor.format(source);
+        Para[] tParas = ParaExtractor.format(target);
         // 段落对比
-        UnitCallback callback = new UnitCallback();
-        ImprovedLSUtils.compare(toArr(sUnits), toArr(tUnits), UnitWeightProvider.get(), callback);
-        print(callback.changes, source, target);
-        return callback.changes;
-    }
-
-    private static Unit[] toArr(List<Unit> units) {
-        return units.toArray(new Unit[0]);
+        LinkedList<Change.Index> result = new LinkedList<>();
+        ImprovedLSUtils.compare(sParas, tParas, new ParaCallback(result));
+//        print(result, source, target);
+        return result;
     }
 
     private static void print(List<Change.Index> changes, String input1, String input2) {

@@ -2,9 +2,6 @@ package differ.fast.pretreat;
 
 import differ.fast.model.Unit;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * 单元提取器
  * <br>Created by Soybeany on 2019/9/11.
@@ -17,17 +14,7 @@ public class UnitExtractor {
     private int charIndex;
     private int unitIndex;
 
-    public static List<Unit> format(String text) {
-        UnitExtractor extractor = new UnitExtractor(text);
-        Unit unit;
-        List<Unit> result = new LinkedList<>();
-        while (null != (unit = extractor.getNextUnit())) {
-            result.add(unit);
-        }
-        return result;
-    }
-
-    private UnitExtractor(String text) {
+    public UnitExtractor(String text) {
         this.text = text;
         this.length = text.length();
     }
@@ -37,7 +24,7 @@ public class UnitExtractor {
      *
      * @return 新拆分的单元，null则表示拆分完毕
      */
-    private Unit getNextUnit() {
+    public Unit getNextUnit() {
         // 若已到底，则不再创建
         if (charIndex >= length) {
             return null;
@@ -46,8 +33,7 @@ public class UnitExtractor {
         char curC = text.charAt(charIndex);
         int priority = PriorityUtils.getPriority(curC);
         Unit unit;
-        ++unitIndex;
-        unit = new Unit(charIndex, unitIndex, priority);
+        unit = new Unit(charIndex, unitIndex++, priority);
         // 单元分类
         switch (unit.priority & PriorityUtils.SEPARATE_SWITCHER) {
             case PriorityUtils.SEPARATE_SINGLE:

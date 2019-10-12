@@ -24,11 +24,10 @@ public interface IWeightProvider<T> {
     /**
      * 标准实现
      */
-    class Std<T> implements IWeightProvider<T> {
+    class Std implements IWeightProvider {
         private static final Std mInstance = new Std();
 
-        @SuppressWarnings("unchecked")
-        public static <T> Std<T> get() {
+        public static Std get() {
             return mInstance;
         }
 
