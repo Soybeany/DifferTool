@@ -1,6 +1,5 @@
 package differ.fast.utils;
 
-import differ.fast.model.Change;
 import differ.fast.model.Range;
 
 /**
@@ -9,9 +8,9 @@ import differ.fast.model.Range;
  */
 public class LevenshteinUtils {
 
-    private static final int WEIGHT_ADD = 2;
+    private static final int WEIGHT_ADD = 1;
     private static final int WEIGHT_MODIFY = 1;
-    private static final int WEIGHT_DELETE = 2;
+    private static final int WEIGHT_DELETE = 1;
 
     // ****************************************公开方法****************************************
 
@@ -29,7 +28,7 @@ public class LevenshteinUtils {
         Info<T> info = new Info<>(source, target, sRange, tRange);
         Node node = calculate(info, info.getSLength() - 1, info.getTLength() - 1);
         callback.onStart();
-        parseNode(info, node, callback);
+        parseNode(info, node, callback, true);
         callback.onFinal(node.value);
     }
 
@@ -67,27 +66,27 @@ public class LevenshteinUtils {
         return curNode;
     }
 
-    private static <T> void parseNode(Info<T> info, Node node, ICallback<T> callback) {
+    private static <T> void parseNode(Info<T> info, Node node, ICallback<T> callback, boolean isEnd) {
         if (null == node.pre) {
             return;
         }
         // 使用递归，将反序的节点处理变为正序处理
-        parseNode(info, node.pre, callback);
+        parseNode(info, node.pre, callback, false);
         // 相等
         if (node.value == node.pre.value) {
-            callback.onElementSame(info.source[node.sIndex], info.target[node.tIndex]);
+            callback.onElementSame(info.source[node.sIndex], info.target[node.tIndex], isEnd);
         }
         // 修改 对角线，相邻节点的下标相差1
         else if (node.sIndex == node.pre.sIndex + 1 && node.tIndex == node.pre.tIndex + 1) {
-            callback.onElementModify(info.source[node.sIndex], info.target[node.tIndex]);
+            callback.onElementModify(info.source[node.sIndex], info.target[node.tIndex], isEnd);
         }
         // 删除
         else if (node.sIndex == node.pre.sIndex + 1) {
-            callback.onElementDelete(node.tIndex + 1, info.source[node.sIndex], info.target[Math.max(node.tIndex, 0)]);
+            callback.onElementDelete(node.tIndex + 1, info.source[node.sIndex], info.target[Math.max(node.tIndex, 0)], isEnd);
         }
         // 新增
         else {
-            callback.onElementAdd(node.sIndex + 1, info.source[Math.max(node.sIndex, 0)], info.target[node.tIndex]);
+            callback.onElementAdd(node.sIndex + 1, info.source[Math.max(node.sIndex, 0)], info.target[node.tIndex], isEnd);
         }
     }
 
@@ -106,22 +105,22 @@ public class LevenshteinUtils {
         /**
          * 元素相等时的回调
          */
-        void onElementSame(T source, T target);
+        void onElementSame(T source, T target, boolean isEnd);
 
         /**
-         * 元素增加时的回调，对应{@link Change#ADD}
+         * 元素增加时的回调
          */
-        void onElementAdd(int addPos, T source, T target);
+        void onElementAdd(int addPos, T source, T target, boolean isEnd);
 
         /**
-         * 元素修改时的回调，对应{@link Change#MODIFY}
+         * 元素修改时的回调
          */
-        void onElementModify(T source, T target);
+        void onElementModify(T source, T target, boolean isEnd);
 
         /**
-         * 元素删除时的回调，对应{@link Change#DELETE}
+         * 元素删除时的回调
          */
-        void onElementDelete(int delPos, T source, T target);
+        void onElementDelete(int delPos, T source, T target, boolean isEnd);
 
         /**
          * 处理后的回调
@@ -182,7 +181,7 @@ public class LevenshteinUtils {
 
         private void init() {
             // 原点
-            matrix[0][0] = new Node(0, tOffset, tOffset, null);
+            matrix[0][0] = new Node(0, sOffset, tOffset, null);
             // 横向初始化
             Node node = matrix[0][0];
             for (int i = 1; i < matrix[0].length; i++) {

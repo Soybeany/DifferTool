@@ -1,8 +1,9 @@
 package differ.fast.pretreat;
 
-import differ.fast.model.unit.AffixUnit;
-import differ.fast.model.unit.BaseUnit;
-import differ.fast.model.unit.ContentUnit;
+import differ.fast.model.Unit;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 单元提取器
@@ -10,18 +11,23 @@ import differ.fast.model.unit.ContentUnit;
  */
 public class UnitExtractor {
 
-    public BaseUnit curUnit;
-    public ContentUnit lastContentUnit;
-    public final StringBuilder contentBuilder = new StringBuilder();
-    public final StringBuilder splitBuilder = new StringBuilder();
-
     private String text;
     private int length;
 
     private int charIndex;
     private int unitIndex;
 
-    public UnitExtractor(String text) {
+    public static List<Unit> format(String text) {
+        UnitExtractor extractor = new UnitExtractor(text);
+        Unit unit;
+        List<Unit> result = new LinkedList<>();
+        while (null != (unit = extractor.getNextUnit())) {
+            result.add(unit);
+        }
+        return result;
+    }
+
+    private UnitExtractor(String text) {
         this.text = text;
         this.length = text.length();
     }
@@ -31,7 +37,7 @@ public class UnitExtractor {
      *
      * @return 新拆分的单元，null则表示拆分完毕
      */
-    public BaseUnit getNextUnit() {
+    private Unit getNextUnit() {
         // 若已到底，则不再创建
         if (charIndex >= length) {
             return null;
@@ -39,13 +45,9 @@ public class UnitExtractor {
         // 创建新单元
         char curC = text.charAt(charIndex);
         byte priority = PriorityUtils.getPriority(curC);
-        BaseUnit unit;
+        Unit unit;
         ++unitIndex;
-        if (PriorityUtils.isHighPriority(priority)) {
-            unit = new ContentUnit(charIndex, unitIndex, priority);
-        } else {
-            unit = new AffixUnit(charIndex, unitIndex, priority);
-        }
+        unit = new Unit(charIndex, unitIndex, priority);
         // 单元分类
         switch (unit.priority & PriorityUtils.SEPARATE_SWITCHER) {
             case PriorityUtils.SEPARATE_SINGLE:

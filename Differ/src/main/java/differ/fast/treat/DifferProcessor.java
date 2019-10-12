@@ -1,10 +1,10 @@
 package differ.fast.treat;
 
 import differ.fast.model.Change;
-import differ.fast.model.Paragraph;
-import differ.fast.pretreat.StructureUtils;
-import differ.fast.treat.callback.ParagraphCallback;
-import differ.fast.utils.LevenshteinUtils;
+import differ.fast.model.Unit;
+import differ.fast.pretreat.UnitExtractor;
+import differ.fast.treat.callback.UnitCallback;
+import differ.fast.utils.ImprovedLSUtils;
 
 import java.util.List;
 
@@ -23,47 +23,17 @@ public class DifferProcessor {
      * 获得单元级别的差异列表
      */
     public static List<Change.Index> getUnitChanges(String source, String target) throws Exception {
-        StructureUtils.Result sResult = StructureUtils.format(source);
-        StructureUtils.Result tResult = StructureUtils.format(target);
+        List<Unit> sUnits = UnitExtractor.format(source);
+        List<Unit> tUnits = UnitExtractor.format(target);
         // 段落对比
-        ParagraphCallback callback = new ParagraphCallback();
-        LevenshteinUtils.compare(sResult.getParagraphs(), tResult.getParagraphs(), callback);
-        System.out.println("相似度:" + (1 - callback.getChangedUnitCount() * 1.0f / Math.max(sResult.getUnitCount(), tResult.getUnitCount())));
+        UnitCallback callback = new UnitCallback();
+        ImprovedLSUtils.compare(toArr(sUnits), toArr(tUnits), callback);
 //        print(callback.changes, source, target);
         return callback.changes;
     }
 
-    private static class Callback implements LevenshteinUtils.ICallback<Paragraph> {
-
-        @Override
-        public void onStart() {
-
-        }
-
-        @Override
-        public void onElementSame(Paragraph source, Paragraph target) {
-            System.out.println("same:" + "s:" + source.pIndex + " t:" + target.pIndex);
-        }
-
-        @Override
-        public void onElementAdd(int addPos, Paragraph source, Paragraph target) {
-            System.out.println("add:" + "s:" + source.pIndex + " t:" + target.pIndex + " addPos:" + addPos);
-        }
-
-        @Override
-        public void onElementModify(Paragraph source, Paragraph target) {
-            System.out.println("modify:" + "s:" + source.pIndex + " t:" + target.pIndex);
-        }
-
-        @Override
-        public void onElementDelete(int delPos, Paragraph source, Paragraph target) {
-            System.out.println("delete:" + "s:" + source.pIndex + " t:" + target.pIndex + " delPos:" + delPos);
-        }
-
-        @Override
-        public void onFinal(int distance) {
-
-        }
+    private static Unit[] toArr(List<Unit> units) {
+        return units.toArray(new Unit[0]);
     }
 
     private static void print(List<Change.Index> changes, String input1, String input2) {
