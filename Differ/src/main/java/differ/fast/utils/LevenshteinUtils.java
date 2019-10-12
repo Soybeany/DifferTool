@@ -8,28 +8,24 @@ import differ.fast.model.Range;
  */
 public class LevenshteinUtils {
 
-    private static final int WEIGHT_ADD = 1;
-    private static final int WEIGHT_MODIFY = 1;
-    private static final int WEIGHT_DELETE = 1;
-
     // ****************************************公开方法****************************************
 
     /**
      * 对比指定的两个数组
      */
     public static <T> void compare(T[] source, T[] target, ICallback<T> callback) {
-        compare(source, target, null, null, callback);
+        compare(source, target, null, null, IWeightProvider.Std.get(), callback);
     }
 
     /**
      * 对比指定的两个数组，范围使用的是数组的下标，包含from，包含to
      */
-    public static <T> void compare(T[] source, T[] target, Range sRange, Range tRange, ICallback<T> callback) {
-        Info<T> info = new Info<>(source, target, sRange, tRange);
+    public static <T> void compare(T[] source, T[] target, Range sRange, Range tRange, IWeightProvider<T> weight, ICallback<T> callback) {
+        Info<T> info = new Info<>(source, target, sRange, tRange, weight);
         Node node = calculate(info, info.getSLength() - 1, info.getTLength() - 1);
         callback.onStart();
-        parseNode(info, node, callback, true);
-        callback.onFinal(node.value);
+        int distance = parseNode(info, node, callback, true);
+        callback.onFinal(distance);
     }
 
     // ****************************************内部方法****************************************
@@ -43,7 +39,7 @@ public class LevenshteinUtils {
 
         // 若元素相等，取矩阵左上角的值
         if (info.isElementEqual(sIndex, tIndex)) {
-            curNode = leftTopNode.createNext(1, 1, 0);
+            curNode = leftTopNode.createRightBottom();
         }
         // 不相等，则取左、左上角、上三者的最小值，然后+1；
         else {
@@ -51,43 +47,48 @@ public class LevenshteinUtils {
             Node topNode = calculate(info, sIndex, tIndex - 1);
             // 删除
             if (leftNode.lt(leftTopNode) && leftNode.lt(topNode)) {
-                curNode = leftNode.createNext(1, 0, WEIGHT_DELETE);
+                curNode = info.withVDelete(leftNode.createRight());
             }
             // 新增
             else if (topNode.lt(leftTopNode)) {
-                curNode = topNode.createNext(0, 1, WEIGHT_ADD);
+                curNode = info.withVAdd(topNode.createBottom());
             }
             // 修改
             else {
-                curNode = leftTopNode.createNext(1, 1, WEIGHT_MODIFY);
+                curNode = info.withVModify(leftTopNode.createRightBottom());
             }
         }
         info.setValue(sIndex, tIndex, curNode);
         return curNode;
     }
 
-    private static <T> void parseNode(Info<T> info, Node node, ICallback<T> callback, boolean isEnd) {
+    /**
+     * @return 莱文斯坦距离
+     */
+    private static <T> int parseNode(Info<T> info, Node node, ICallback<T> callback, boolean isEnd) {
         if (null == node.pre) {
-            return;
+            return 0;
         }
         // 使用递归，将反序的节点处理变为正序处理
-        parseNode(info, node.pre, callback, false);
+        int distance = parseNode(info, node.pre, callback, false);
         // 相等
         if (node.value == node.pre.value) {
-            callback.onElementSame(info.source[node.sIndex], info.target[node.tIndex], isEnd);
+            callback.onElementSame(info.source[node.sIndexInArr], info.target[node.tIndexInArr], isEnd);
+            return distance;
         }
         // 修改 对角线，相邻节点的下标相差1
-        else if (node.sIndex == node.pre.sIndex + 1 && node.tIndex == node.pre.tIndex + 1) {
-            callback.onElementModify(info.source[node.sIndex], info.target[node.tIndex], isEnd);
+        if (node.sIndexInArr == node.pre.sIndexInArr + 1 && node.tIndexInArr == node.pre.tIndexInArr + 1) {
+            callback.onElementModify(info.source[node.sIndexInArr], info.target[node.tIndexInArr], isEnd);
         }
         // 删除
-        else if (node.sIndex == node.pre.sIndex + 1) {
-            callback.onElementDelete(node.tIndex + 1, info.source[node.sIndex], info.target[Math.max(node.tIndex, 0)], isEnd);
+        else if (node.sIndexInArr == node.pre.sIndexInArr + 1) {
+            callback.onElementDelete(node.tIndexInArr + 1, info.source[node.sIndexInArr], info.target[Math.max(node.tIndexInArr, 0)], isEnd);
         }
         // 新增
         else {
-            callback.onElementAdd(node.sIndex + 1, info.source[Math.max(node.sIndex, 0)], info.target[node.tIndex], isEnd);
+            callback.onElementAdd(node.sIndexInArr + 1, info.source[Math.max(node.sIndexInArr, 0)], info.target[node.tIndexInArr], isEnd);
         }
+        return distance + 1;
     }
 
     // ****************************************内部类****************************************
@@ -130,19 +131,22 @@ public class LevenshteinUtils {
 
     private static class Info<T> {
 
+        Node[][] matrix;
+
         private T[] source;
         private T[] target;
-        Node[][] matrix;
 
         // 坐标系切换的偏移量
         private int sOffset = -1;
         private int tOffset = -1;
 
+        private IWeightProvider<T> weight;
+
         /**
          * @param sRange 可空，表示不限制范围
          * @param tRange 可空，表示不限制范围
          */
-        Info(T[] source, T[] target, Range sRange, Range tRange) {
+        Info(T[] source, T[] target, Range sRange, Range tRange, IWeightProvider<T> weight) {
             this.source = source;
             this.target = target;
             int sLength = source.length;
@@ -156,6 +160,7 @@ public class LevenshteinUtils {
                 tLength = tRange.length();
             }
             matrix = new Node[tLength + 1][sLength + 1];
+            this.weight = weight;
             init();
         }
 
@@ -179,38 +184,51 @@ public class LevenshteinUtils {
             matrix[tIndex][sIndex] = value;
         }
 
+        Node withVAdd(Node node) {
+            return node.withVDelta(weight.getAddAction() + weight.getAddElement(target[node.tIndexInArr]));
+        }
+
+        /**
+         * 与指定node左上角的node对比
+         */
+        Node withVModify(Node node) {
+            return node.withVDelta(weight.getModifyAction() + weight.getModifyElement(source[node.sIndexInArr], target[node.tIndexInArr]));
+        }
+
+        Node withVDelete(Node node) {
+            return node.withVDelta(weight.getDeleteAction() + weight.getDeleteElement(source[node.sIndexInArr]));
+        }
+
         private void init() {
             // 原点
             matrix[0][0] = new Node(0, sOffset, tOffset, null);
             // 横向初始化
             Node node = matrix[0][0];
             for (int i = 1; i < matrix[0].length; i++) {
-                matrix[0][i] = node.createNext(1, 0, WEIGHT_DELETE);
-                node = matrix[0][i];
+                node = matrix[0][i] = withVDelete(node.createRight());
             }
             // 纵向初始化
             node = matrix[0][0];
             for (int i = 1; i < matrix.length; i++) {
-                matrix[i][0] = node.createNext(0, 1, WEIGHT_ADD);
-                node = matrix[i][0];
+                node = matrix[i][0] = withVAdd(node.createBottom());
             }
         }
     }
 
     /**
-     * 节点，使用矩阵下标，同时是入参数组的位点坐标
+     * 节点，使用数组下标，同时是入参数组的位点坐标
      */
     private static class Node {
         int value;
-        int sIndex;
-        int tIndex;
+        int sIndexInArr;
+        int tIndexInArr;
 
         Node pre;
 
-        Node(int value, int sIndex, int tIndex, Node pre) {
+        Node(int value, int sIndexInArr, int tIndexInArr, Node pre) {
             this.value = value;
-            this.sIndex = sIndex;
-            this.tIndex = tIndex;
+            this.sIndexInArr = sIndexInArr;
+            this.tIndexInArr = tIndexInArr;
             this.pre = pre;
         }
 
@@ -218,8 +236,25 @@ public class LevenshteinUtils {
             return value < node.value;
         }
 
-        Node createNext(int sDelta, int tDelta, int vDelta) {
-            return new Node(value + vDelta, sIndex + sDelta, tIndex + tDelta, this);
+        Node withVDelta(int delta) {
+            value += delta;
+            return this;
+        }
+
+        Node createRight() {
+            return createNext(1, 0);
+        }
+
+        Node createBottom() {
+            return createNext(0, 1);
+        }
+
+        Node createRightBottom() {
+            return createNext(1, 1);
+        }
+
+        private Node createNext(int sDelta, int tDelta) {
+            return new Node(value, sIndexInArr + sDelta, tIndexInArr + tDelta, this);
         }
     }
 }

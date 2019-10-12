@@ -27,8 +27,8 @@ public class DifferProcessor {
         List<Unit> tUnits = UnitExtractor.format(target);
         // 段落对比
         UnitCallback callback = new UnitCallback();
-        ImprovedLSUtils.compare(toArr(sUnits), toArr(tUnits), callback);
-//        print(callback.changes, source, target);
+        ImprovedLSUtils.compare(toArr(sUnits), toArr(tUnits), UnitWeightProvider.get(), callback);
+        print(callback.changes, source, target);
         return callback.changes;
     }
 

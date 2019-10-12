@@ -6,23 +6,23 @@ package differ.fast.pretreat;
  */
 public class PriorityUtils {
 
-    public static final byte SEPARATE_SINGLE = 1;
-    public static final byte SEPARATE_GROUP = 2;
+    public static final int SEPARATE_SINGLE = 1;
+    public static final int SEPARATE_GROUP = 2;
 
-    private static final byte SEPARATE_TYPE_SHIFT = 2;
-    public static final byte SEPARATE_SWITCHER = (1 << SEPARATE_TYPE_SHIFT) - 1;
+    private static final int SEPARATE_TYPE_SHIFT = 2;
+    public static final int SEPARATE_SWITCHER = (1 << SEPARATE_TYPE_SHIFT) - 1;
 
-    public static final byte PRIORITY_CN_CHAR = (5 << SEPARATE_TYPE_SHIFT) + SEPARATE_SINGLE;
-    public static final byte PRIORITY_EN_LETTER = (4 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final byte PRIORITY_NUM = (3 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final byte PRIORITY_OTHER = (2 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final byte PRIORITY_EN_SYMBOL = (1 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
-    public static final byte PRIORITY_NEWLINE = SEPARATE_GROUP;
+    public static final int PRIORITY_CN_CHAR = (5 << SEPARATE_TYPE_SHIFT) + SEPARATE_SINGLE;
+    public static final int PRIORITY_EN_LETTER = (4 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_NUM = (3 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_OTHER = (2 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_EN_SYMBOL = (1 << SEPARATE_TYPE_SHIFT) + SEPARATE_GROUP;
+    public static final int PRIORITY_NEWLINE = SEPARATE_GROUP;
 
     /**
      * 获得字符的优先级
      */
-    public static byte getPriority(char c) {
+    public static int getPriority(char c) {
         if (isEnLetter(c)) {
             return PRIORITY_EN_LETTER;
         } else if (isNewline(c)) {
@@ -35,13 +35,6 @@ public class PriorityUtils {
             return PRIORITY_CN_CHAR;
         }
         return PRIORITY_OTHER;
-    }
-
-    /**
-     * 判断指定优先级是否为 高优先级
-     */
-    public static boolean isHighPriority(byte priority) {
-        return priority >= PRIORITY_OTHER;
     }
 
     /**

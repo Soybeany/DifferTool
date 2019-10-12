@@ -18,7 +18,7 @@ public class ImprovedLSUtils {
     /**
      * 对比指定的两个数组
      */
-    public static <T> void compare(T[] source, T[] target, ICallback<T> callback) {
+    public static <T> void compare(T[] source, T[] target, IWeightProvider<T> weight, ICallback<T> callback) {
         // 变量初始化
         int sourceMaxIndex = source.length - 1, targetMaxIndex = target.length - 1;
         Range sRange = new Range().setup(0, Math.min(sourceMaxIndex, SECTION_LENGTH - 1));
@@ -43,7 +43,7 @@ public class ImprovedLSUtils {
                 break;
             }
             // 常规处理
-            LevenshteinUtils.compare(source, target, sRange, tRange, callbackWrapper);
+            LevenshteinUtils.compare(source, target, sRange, tRange, weight, callbackWrapper);
             // 将末尾的增删移到下一次
             sOffset = callbackWrapper.getRollbackSize(Change.DELETE);
             tOffset = callbackWrapper.getRollbackSize(Change.ADD);
@@ -73,7 +73,7 @@ public class ImprovedLSUtils {
     }
 
     private static class ChangeInfo<T> {
-        byte changeType; // 变更类型
+        int changeType; // 变更类型
         LinkedList<Change.Obj<T>> changes;
 
         void reset() {
@@ -135,7 +135,7 @@ public class ImprovedLSUtils {
             this.distance += distance;
         }
 
-        int getRollbackSize(byte changeType) {
+        int getRollbackSize(int changeType) {
             if (mEndInfo.changeType != changeType) {
                 return 0;
             }
@@ -149,7 +149,7 @@ public class ImprovedLSUtils {
         /**
          * 缓存末尾的变更
          */
-        private void cacheEndChange(byte changeType, Change.Obj<T> obj) {
+        private void cacheEndChange(int changeType, Change.Obj<T> obj) {
             if (mInfo.changeType == changeType) {
                 mEndInfo.changes = mInfo.changes;
                 mInfo.changeType = Change.UNDEFINED;
@@ -164,7 +164,7 @@ public class ImprovedLSUtils {
         /**
          * 获得变更列表，并按需将变更冲刷到目标类
          */
-        private List<Change.Obj<T>> getChangeListAndFlush(byte changeType) {
+        private List<Change.Obj<T>> getChangeListAndFlush(int changeType) {
             // 若能重用则重用变更
             if (mInfo.changeType == changeType) {
                 return mInfo.changes;

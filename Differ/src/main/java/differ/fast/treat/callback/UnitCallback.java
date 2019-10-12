@@ -23,13 +23,14 @@ public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
     @Override
     public void onElementHandled(LinkedList<Change.Obj<Unit>> objs) {
         Change.Obj<Unit> firstUnit = objs.getFirst();
-        byte changeType = firstUnit.type;
+        int changeType = firstUnit.type;
         // 若元素相同，不作处理
         if (Change.SAME == changeType) {
             return;
         }
         Change.Obj<Unit> lastUnit = objs.getLast();
         Change.Index change = new Change.Index(changeType, new Range(), new Range());
+        change.count = objs.size();
         switch (changeType) {
             case Change.ADD:
                 change.source.from = change.source.to = getIndex(firstUnit.isPosAtEnd, firstUnit.source);
@@ -49,7 +50,7 @@ public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
 
     @Override
     public void onFinal(int distance) {
-
+        System.out.println("距离:" + distance);
     }
 
     private int getIndex(boolean isPosAtEnd, Unit unit) {

@@ -44,7 +44,7 @@ public class UnitExtractor {
         }
         // 创建新单元
         char curC = text.charAt(charIndex);
-        byte priority = PriorityUtils.getPriority(curC);
+        int priority = PriorityUtils.getPriority(curC);
         Unit unit;
         ++unitIndex;
         unit = new Unit(charIndex, unitIndex, priority);

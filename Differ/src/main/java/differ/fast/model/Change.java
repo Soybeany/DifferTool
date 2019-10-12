@@ -4,16 +4,16 @@ package differ.fast.model;
  * 内容的变动
  */
 public abstract class Change {
-    public static final byte UNDEFINED = -1; // 未定义
-    public static final byte SAME = 0; // 相等
-    public static final byte ADD = 1; // 增加
-    public static final byte MODIFY = 2; // 修改
-    public static final byte DELETE = 3; // 删除
+    public static final int UNDEFINED = -1; // 未定义
+    public static final int SAME = 0; // 相等
+    public static final int ADD = 1; // 增加
+    public static final int MODIFY = 2; // 修改
+    public static final int DELETE = 3; // 删除
 
     /**
      * 变更类型
      */
-    public byte type = UNDEFINED;
+    public int type = UNDEFINED;
 
     /**
      * 使用对象表示
@@ -35,13 +35,13 @@ public abstract class Change {
          */
         public T target;
 
-        public Obj(byte type, T source, T target) {
+        public Obj(int type, T source, T target) {
             this.type = type;
             this.source = source;
             this.target = target;
         }
 
-        public Obj(byte type, boolean isPosAtEnd, T source, T target) {
+        public Obj(int type, boolean isPosAtEnd, T source, T target) {
             this(type, source, target);
             this.isPosAtEnd = isPosAtEnd;
         }
@@ -72,7 +72,7 @@ public abstract class Change {
          */
         public Range target;
 
-        public Index(byte type, Range source, Range target) {
+        public Index(int type, Range source, Range target) {
             this.type = type;
             this.source = source;
             this.target = target;

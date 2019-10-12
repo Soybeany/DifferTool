@@ -34,10 +34,10 @@ public class StructImpl {
 //        List<CompareResult> results = ContentTraverser.getResult(loadFile("D:\\test.txt"), loadFile("D:\\test3.txt"));
 //        List<CompareResult> results = ContentTraverser.getResult(loadFile("D:\\newTest1.txt"), loadFile("D:\\newTest2.txt"));
 //        List<CompareResult> sections = SectionUtils.toSections(results);
-//        String input1 = textA, input2 = textB;
+        String input1 = textA, input2 = textB;
 //        String input1 = loadFile("D:\\x1.txt"), input2 = loadFile("D:\\x2.txt");
 //        String input1 = loadFile("D:\\CSN329 - 1.txt"), input2 = loadFile("D:\\CSN329 - 2.txt");
-        String input1 = loadFile("D:\\test.txt"), input2 = loadFile("D:\\test2.txt");
+//        String input1 = loadFile("D:\\test.txt"), input2 = loadFile("D:\\test2.txt");
 //        String input1 = loadFile("D:\\what1.txt"), input2 = loadFile("D:\\what2.txt");
 //        String input1 = loadFile("D:\\x1.txt"), input2 = loadFile("D:\\x2.txt");
 //        Paragraph[] params1 = toParamArr(StructureUtils.toParams(input1));

@@ -29,9 +29,9 @@ public class Unit {
     /**
      * 优先级
      */
-    public byte priority;
+    public int priority;
 
-    public Unit(int charStartIndex, int unitIndex, byte priority) {
+    public Unit(int charStartIndex, int unitIndex, int priority) {
         this.charStartIndex = charStartIndex;
         this.unitIndex = unitIndex;
         this.priority = priority;
