@@ -14,7 +14,6 @@ import java.util.List;
 public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
 
     private List<Change.Index> changes;
-    private int distance;
 
     public UnitCallback(List<Change.Index> changes) {
         this.changes = changes;
@@ -52,12 +51,7 @@ public class UnitCallback implements ImprovedLSUtils.ICallback<Unit> {
     }
 
     @Override
-    public void onFinal(int distance) {
-        this.distance = distance;
-    }
-
-    public int getDistance() {
-        return distance;
+    public void onFinal() {
     }
 
     private int getIndex(boolean isPosAtEnd, Unit unit) {

@@ -25,8 +25,8 @@ public class LevenshteinUtils {
         Info<T> info = new Info<>(source, target, sRange, tRange, weight);
         Node node = calculate(info, info.getSLength() - 1, info.getTLength() - 1);
         callback.onStart();
-        int distance = parseNode(info, node, callback, true);
-        callback.onFinal(distance);
+        int distance = parseNode(info, node, callback);
+        callback.onFinal(distance, info.getSLength(), info.getTLength());
     }
 
     // ****************************************内部方法****************************************
@@ -66,28 +66,28 @@ public class LevenshteinUtils {
     /**
      * @return 莱文斯坦距离
      */
-    private static <T> int parseNode(Info<T> info, Node node, ICallback<T> callback, boolean isEnd) {
+    private static <T> int parseNode(Info<T> info, Node node, ICallback<T> callback) {
         if (null == node.pre) {
             return 0;
         }
         // 使用递归，将反序的节点处理变为正序处理
-        int distance = parseNode(info, node.pre, callback, false);
+        int distance = parseNode(info, node.pre, callback);
         // 相等
         if (node.value == node.pre.value) {
-            callback.onElementSame(info.source[node.sIndexInArr], info.target[node.tIndexInArr], isEnd);
+            callback.onElementSame(info.source[node.sIndexInArr], info.target[node.tIndexInArr]);
             return distance;
         }
         // 修改 对角线，相邻节点的下标相差1
         if (node.sIndexInArr == node.pre.sIndexInArr + 1 && node.tIndexInArr == node.pre.tIndexInArr + 1) {
-            callback.onElementModify(info.source[node.sIndexInArr], info.target[node.tIndexInArr], isEnd);
+            callback.onElementModify(info.source[node.sIndexInArr], info.target[node.tIndexInArr]);
         }
         // 删除
         else if (node.sIndexInArr == node.pre.sIndexInArr + 1) {
-            callback.onElementDelete(node.tIndexInArr + 1, info.source[node.sIndexInArr], info.target[Math.max(node.tIndexInArr, 0)], isEnd);
+            callback.onElementDelete(node.tIndexInArr + 1, info.source[node.sIndexInArr], info.target[Math.max(node.tIndexInArr, 0)]);
         }
         // 新增
         else {
-            callback.onElementAdd(node.sIndexInArr + 1, info.source[Math.max(node.sIndexInArr, 0)], info.target[node.tIndexInArr], isEnd);
+            callback.onElementAdd(node.sIndexInArr + 1, info.source[Math.max(node.sIndexInArr, 0)], info.target[node.tIndexInArr]);
         }
         return distance + 1;
     }
@@ -107,27 +107,27 @@ public class LevenshteinUtils {
         /**
          * 元素相等时的回调
          */
-        void onElementSame(T source, T target, boolean isEnd);
+        void onElementSame(T source, T target);
 
         /**
          * 元素增加时的回调
          */
-        void onElementAdd(int addPos, T source, T target, boolean isEnd);
+        void onElementAdd(int addPos, T source, T target);
 
         /**
          * 元素修改时的回调
          */
-        void onElementModify(T source, T target, boolean isEnd);
+        void onElementModify(T source, T target);
 
         /**
          * 元素删除时的回调
          */
-        void onElementDelete(int delPos, T source, T target, boolean isEnd);
+        void onElementDelete(int delPos, T source, T target);
 
         /**
          * 处理后的回调
          */
-        void onFinal(int distance);
+        void onFinal(int distance, int sSize, int tSize);
     }
 
     private static class Info<T> {

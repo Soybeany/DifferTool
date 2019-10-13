@@ -17,20 +17,21 @@ public class ParaExtractor {
     /**
      * 将指定字符串格式化
      */
-    public static Para[] format(String text) throws Exception {
+    public static Result format(String text) throws Exception {
         // 初始化变量
         int paraIndex = 0;
         Para para = new Para(paraIndex, 0);
         UnitExtractor extractor = new UnitExtractor(text);
         Unit curUnit, lastUnit = null;
-        List<Para> result = new LinkedList<>();
+        List<Para> paras = new LinkedList<>();
+        int unitCount = 0;
         StringBuilder contentBuilder = new StringBuilder();
         // 整理单元
         while (null != (curUnit = extractor.getNextUnit())) {
             // 段落分隔单元
             if (PriorityUtils.PRIORITY_NEWLINE == curUnit.priority && curUnit.length() > 1) {
                 para.newlineUnit = curUnit;
-                setupEndOfParagraph(result, para, contentBuilder, lastUnit);
+                setupEndOfParagraph(paras, para, contentBuilder, lastUnit);
                 // 切换到新的段落，清空缓存
                 para = new Para(++paraIndex, curUnit.charEndIndex);
             }
@@ -40,12 +41,13 @@ public class ParaExtractor {
                 contentBuilder.append(curUnit.text).append(DIVIDER);
             }
             lastUnit = curUnit;
+            ++unitCount;
         }
         // 补充最后一个段落的设置
         if (!para.units.isEmpty()) {
-            setupEndOfParagraph(result, para, contentBuilder, lastUnit);
+            setupEndOfParagraph(paras, para, contentBuilder, lastUnit);
         }
-        return result.toArray(new Para[0]);
+        return new Result(paras, unitCount);
     }
 
     private static void setupEndOfParagraph(List<Para> result, Para paragraph, StringBuilder contentBuilder, Unit lastUnit) throws Exception {
@@ -58,5 +60,15 @@ public class ParaExtractor {
         result.add(paragraph);
         // 设置段落的结束下标
         paragraph.charEndIndex = lastUnit.charEndIndex;
+    }
+
+    public static class Result {
+        public Para[] paras;
+        public int unitCount;
+
+        Result(List<Para> paras, int unitCount) {
+            this.paras = paras.toArray(new Para[0]);
+            this.unitCount = unitCount;
+        }
     }
 }

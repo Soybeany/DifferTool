@@ -1,7 +1,6 @@
 package differ.fast.treat;
 
 import differ.fast.model.Change;
-import differ.fast.model.Para;
 import differ.fast.pretreat.ParaExtractor;
 import differ.fast.treat.callback.ParaCallback;
 import differ.fast.utils.ImprovedLSUtils;
@@ -24,11 +23,11 @@ public class DifferProcessor {
      * 获得单元级别的差异列表
      */
     public static List<Change.Index> getUnitChanges(String source, String target) throws Exception {
-        Para[] sParas = ParaExtractor.format(source);
-        Para[] tParas = ParaExtractor.format(target);
+        ParaExtractor.Result sResult = ParaExtractor.format(source);
+        ParaExtractor.Result tResult = ParaExtractor.format(target);
         // 段落对比
         LinkedList<Change.Index> result = new LinkedList<>();
-        ImprovedLSUtils.compare(sParas, tParas, new ParaCallback(result));
+        ImprovedLSUtils.compare(sResult.paras, tResult.paras, new ParaCallback(result));
 //        print(result, source, target);
         return result;
     }

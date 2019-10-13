@@ -18,7 +18,6 @@ public class ParaCallback implements ImprovedLSUtils.ICallback<Para> {
     private List<Change.Index> changes;
     private UnitCallback callback;
     private Change.Index mLastChange; // 上一次使用的变更
-    private int distance;
 
     public ParaCallback(List<Change.Index> changes) {
         this.changes = changes;
@@ -41,15 +40,13 @@ public class ParaCallback implements ImprovedLSUtils.ICallback<Para> {
         for (Change.Obj<Para> obj : objs) {
             ImprovedLSUtils.compare(obj.source.getUnitArr(), obj.target.getUnitArr(), UnitWeightProvider.get(), callback);
             compareNewlineUnit(obj);
-            distance += callback.getDistance();
         }
     }
 
     @Override
-    public void onFinal(int distance) {
+    public void onFinal() {
 
     }
-
 
     private void compareNewlineUnit(Change.Obj<Para> obj) {
         Unit sNewlineUnit = obj.source.newlineUnit;
@@ -80,7 +77,6 @@ public class ParaCallback implements ImprovedLSUtils.ICallback<Para> {
         Change.Index change = getSuitableChange(changeType, sCharStartIndex, tCharStartIndex);
         change.source.to = sCharEndIndex;
         change.target.to = tCharEndIndex;
-        distance++;
     }
 
     /**

@@ -6,8 +6,10 @@ package differ.fast.pretreat;
  */
 public class PriorityUtils {
 
+    //   00000     00
+    //  优先级   分隔类型
     public static final int SEPARATE_SINGLE = 1;
-    public static final int SEPARATE_GROUP = 2;
+    public static final int SEPARATE_GROUP = 1 << 1;
 
     private static final int SEPARATE_TYPE_SHIFT = 2;
     public static final int SEPARATE_SWITCHER = (1 << SEPARATE_TYPE_SHIFT) - 1;
