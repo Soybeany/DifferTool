@@ -50,7 +50,7 @@ public class StructImpl {
 //        LevenshteinUtils.Result result = ImprovedLSUtils.compare(toCharArr(input1), toCharArr(input2));
 //        LevenshteinUtils.Result result = ImprovedLSUtils.compare(toCharArr(loadFile("D:\\CSN329 - 1.txt")), toCharArr(loadFile("D:\\CSN329 - 2.txt")));
         TimeSpendRecorder.INSTANCE.stop();
-        print(changes, input1, input2);
+        DifferProcessor.print(changes, input1, input2);
         System.out.println("变更数:" + changes.size());
     }
 
@@ -66,19 +66,4 @@ public class StructImpl {
         return builder.toString();
     }
 
-
-    private static void print(List<Change.Index> changes, String input1, String input2) {
-        for (Change.Index change : changes) {
-            String msg = "type:" + change.type + "  count:" + change.count
-                    + "\n";
-            msg += "source:" + replaceNewLine(input1.substring(change.source.from, change.source.to)) + "(" + change.source.from + "~" + change.source.to + ")"
-                    + "\n";
-            msg += "target:" + replaceNewLine(input2.substring(change.target.from, change.target.to)) + "(" + change.target.from + "~" + change.target.to + ")";
-            System.out.println(msg + "\n");
-        }
-    }
-
-    private static String replaceNewLine(String input) {
-        return input.replaceAll("\n", "\\\\n");
-    }
 }

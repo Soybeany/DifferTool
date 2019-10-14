@@ -42,14 +42,32 @@ public class DifferProcessor {
     }
 
     /**
+     * 打印结果
+     */
+    public static void print(List<Change.Index> changes, String input1, String input2) {
+        for (Change.Index change : changes) {
+            String msg = "type:" + change.type + "  count:" + change.count
+                    + "\n";
+            msg += "source:" + replaceNewLine(input1.substring(change.source.from, change.source.to)) + "(" + change.source.from + "~" + change.source.to + ")"
+                    + "\n";
+            msg += "target:" + replaceNewLine(input2.substring(change.target.from, change.target.to)) + "(" + change.target.from + "~" + change.target.to + ")";
+            System.out.println(msg + "\n");
+        }
+    }
+
+    private static String replaceNewLine(String input) {
+        return input.replaceAll("\n", "\\\\n");
+    }
+
+    /**
      * 配置
      */
     public static class Config {
 
-        IParaExtractor paraExtractor = new ParaExtractor();
+        public final Detail<Para> para = new Detail<>();
+        public final Detail<Unit> unit = new Detail<>();
 
-        final Detail<Para> para = new Detail<>();
-        final Detail<Unit> unit = new Detail<>();
+        IParaExtractor paraExtractor = new ParaExtractor();
 
         /**
          * 设置段落提取器
